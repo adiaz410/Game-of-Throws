@@ -1019,17 +1019,15 @@
             championship: { t1: "House Stark (Arya)", t2: "House Targaryen (Jon)", winner: 1 }
         };
 
-        // --- CLOUD CONFIGURATION (JSONBin.io) ---
-        const JSONBIN_BIN_ID = '6a62bfe5da38895dfe87a067';
-        const JSONBIN_MASTER_KEY = '$2a$10$eJm/CndBULanQFfD9mon2.oL.n2iT8rM9wRVGyBR7UXyMLdw9eodS';
+        // --- CLOUD CONFIGURATION (Cloudflare Worker + GitHub Gist) ---
+        const WORKER_URL = 'https://game-of-throws.a-diaz628.workers.dev/';
 
         async function loadRealmData() {
             try {
-                let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                });
+                let response = await fetch(WORKER_URL);
+                if (!response.ok) throw new Error('Failed to fetch from backend');
                 let result = await response.json();
-                return result.record;
+                return result;
             } catch (error) {
                 console.error("Failed to load from cloud, falling back to local storage.", error);
                 let fallback = JSON.parse(localStorage.getItem('gameOfThrowsData'));
@@ -1040,20 +1038,20 @@
         async function saveRealmData(data) {
             localStorage.setItem('gameOfThrowsData', JSON.stringify(data));
             try {
-                let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                let response = await fetch(WORKER_URL, {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_MASTER_KEY
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(data)
                 });
                 if (!response.ok) throw new Error('Cloud sync failed');
             } catch (error) {
                 console.error("Error saving data to cloud:", error);
-                alert("Changes saved locally, but cloud sync failed. Check your network/API keys.");
+                alert("Changes saved locally, but cloud sync failed. Check network or backend server.");
             }
         }
+
 
         let realmData = {};
 
