@@ -1,0 +1,2921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game of Throws - Fantasy Football Realm</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #000000;
+            --bg-panel: #16181e;
+            --border-gold: #c5a059;
+            --text-main: #d0d0d5;
+            --text-muted: #8c8f99;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Lora', serif;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem 1rem 1.2rem 1rem;
+            border-bottom: 2px solid var(--border-gold);
+            background: #000000;
+            position: relative;
+        }
+
+        .data-io-container {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 150;
+        }
+
+        .header-content {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .header-content:hover h1 {
+            color: #ffd700;
+        }
+
+        .header-logo {
+            height: 60px;
+            object-fit: contain;
+            border: 1px solid var(--border-gold);
+            border-radius: 4px;
+        }
+
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.8rem;
+            color: var(--border-gold);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            transition: color 0.3s ease;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: var(--bg-panel);
+            padding: 1rem;
+            border-bottom: 1px solid #2c2f3b;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav button, .dropdown-toggle {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-main);
+            font-family: 'Cinzel', serif;
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        nav button:hover, nav button.active, .dropdown:hover .dropdown-toggle, .dropdown-toggle.active {
+            color: var(--border-gold);
+            border-color: var(--border-gold);
+            background: rgba(197, 160, 89, 0.05);
+        }
+
+        /* Dropdown Styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: var(--bg-panel);
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-gold);
+            z-index: 200;
+            top: 100%;
+            left: 0;
+        }
+
+        .dropdown-content button {
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #2c2f3b;
+            background: transparent;
+        }
+
+        .dropdown-content button:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-content button:hover {
+            background: rgba(197, 160, 89, 0.1);
+            color: var(--border-gold);
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2c2f3b;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            font-family: 'Cinzel', serif;
+            color: var(--border-gold);
+            font-size: 2rem;
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-panel);
+            border: 1px solid #2c2f3b;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        }
+
+        th, td {
+            padding: 0.85rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #2c2f3b;
+            font-size: 0.95rem;
+        }
+
+        th {
+            font-family: 'Cinzel', serif;
+            background: #111318;
+            color: var(--border-gold);
+            letter-spacing: 1px;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            color: #ffd700;
+            background: #1a1c23;
+        }
+
+        th.th-gold { color: #ffd700; }
+        th.th-silver { color: #c0c0c0; }
+        th.th-bronze { color: #cd7f32; }
+        th.th-brown { color: #8b4513; }
+
+        tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .champion-row {
+            background: rgba(197, 160, 89, 0.1) !important;
+            border-left: 4px solid var(--border-gold);
+        }
+
+        td input, td select, .edit-form-container input, .edit-form-container select, .past-season-input, .current-season-input {
+            background: #0c0d10;
+            border: 1px solid #2c2f3b;
+            color: var(--text-main);
+            padding: 0.3rem 0.5rem;
+            font-family: 'Lora', serif;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+
+        td input:focus, td select:focus, .edit-form-container input:focus, .edit-form-container select:focus, .past-season-input:focus, .current-season-input:focus {
+            outline: none;
+            border-color: var(--border-gold);
+        }
+
+        .edit-form-container {
+            display: none;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-gold);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        }
+
+        .edit-form-container.active {
+            display: block;
+        }
+
+        .edit-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            background: #111318;
+            padding: 0.75rem;
+            border: 1px solid #2c2f3b;
+        }
+
+        .edit-row label {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            color: var(--border-gold);
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .matchups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .duel-card {
+            background: var(--bg-panel);
+            border: 1px solid #2c2f3b;
+            border-top: 2px solid var(--border-gold);
+            padding: 1.5rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .bowl-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            color: var(--border-gold);
+            text-align: center;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-bottom: 1px dashed #2c2f3b;
+            padding-bottom: 0.4rem;
+        }
+
+        .duel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2c2f3b;
+            padding-bottom: 0.6rem;
+        }
+
+        .duel-house {
+            font-family: 'Cinzel', serif;
+            color: var(--border-gold);
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .duel-vs {
+            font-family: 'Cinzel', serif;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .duel-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            text-align: center;
+            gap: 0.5rem;
+            background: #111318;
+            padding: 0.8rem;
+            border: 1px solid #2c2f3b;
+        }
+
+        .duel-stat-box label {
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .duel-stat-box span {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .duel-stat-box span.highlight {
+            color: var(--border-gold);
+        }
+
+        .champions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .champion-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-gold);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .champion-card::before {
+            content: "👑";
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .champion-year {
+            font-family: 'Cinzel', serif;
+            color: var(--border-gold);
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .champion-name {
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            margin-bottom: 0.3rem;
+        }
+
+        /* Playoff Bracket Styles */
+        .bracket-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 2rem;
+            background: var(--bg-panel);
+            border: 1px solid #2c2f3b;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        }
+
+        .bracket-round {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            gap: 1.5rem;
+            flex: 1;
+            min-width: 240px;
+        }
+
+        .bracket-round-title {
+            font-family: 'Cinzel', serif;
+            color: var(--border-gold);
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #2c2f3b;
+            padding-bottom: 0.4rem;
+        }
+
+        .bracket-matchup {
+            background: #111318;
+            border: 1px solid #2c2f3b;
+            padding: 0.75rem;
+            position: relative;
+        }
+
+        .bracket-team {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0.5rem;
+            font-size: 0.9rem;
+            font-family: 'Lora', serif;
+        }
+
+        .bracket-team.winner {
+            color: var(--border-gold);
+            font-weight: bold;
+            background: rgba(197, 160, 89, 0.08);
+        }
+
+        .bye-indicator {
+            font-size: 0.75rem;
+            color: var(--border-gold);
+            font-family: 'Cinzel', serif;
+            font-style: italic;
+        }
+
+        .action-btn-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: #1c202a;
+            color: var(--border-gold);
+            border: 1px solid var(--border-gold);
+            padding: 0.4rem 1rem;
+            font-family: 'Cinzel', serif;
+            cursor: pointer;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: var(--border-gold);
+            color: var(--bg-dark);
+        }
+
+        .danger-btn {
+            background: #3a1515;
+            color: #ff9999;
+            border: 1px solid #8b0000;
+        }
+
+        .danger-btn:hover {
+            background: #8b0000;
+            color: #ffffff;
+        }
+
+        .points-rule-box {
+            background: var(--bg-panel);
+            border: 1px solid #2c2f3b;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            color: var(--border-gold);
+        }
+
+        .name-with-banner {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .name-banner-icon {
+            width: 40px;
+            height: 56px;
+            object-fit: contain;
+            vertical-align: middle;
+        }
+
+        /* Medieval Slab Rules Box Styles */
+        .medieval-slab-container {
+            max-width: 800px;
+            margin: 3rem auto;
+            text-align: center;
+        }
+
+        .medieval-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            color: var(--border-gold);
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+        }
+
+        .medieval-slab {
+            background: linear-gradient(135deg, #23262d 0%, #121418 50%, #1c1f26 100%);
+            border: 6px ridge #5a5d68;
+            border-radius: 4px;
+            padding: 2.5rem;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.8), inset 0 0 40px rgba(0,0,0,0.9);
+            position: relative;
+        }
+
+        .medieval-slab::before {
+            content: "§";
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            color: var(--border-gold);
+            font-size: 1.2rem;
+            opacity: 0.6;
+        }
+
+        .medieval-slab::after {
+            content: "§";
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: var(--border-gold);
+            font-size: 1.2rem;
+            opacity: 0.6;
+        }
+
+        .commandments-content {
+            background: rgba(12, 13, 16, 0.85);
+            border: 2px solid var(--border-gold);
+            color: #e2d9c5;
+            font-family: 'Lora', serif;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+        }
+
+        .commandments-content h3 {
+            font-family: 'Cinzel', serif;
+            color: var(--border-gold);
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .commandments-content ul {
+            list-style-type: none;
+            padding: 0;
+            display: inline-block;
+            text-align: left;
+        }
+
+        .commandments-content li {
+            margin-bottom: 0.75rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .commandments-content li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--border-gold);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="data-io-container">
+            <button class="action-btn" onclick="requestPassword('export-data')" title="Export All Realm Data">📥</button>
+            <button class="action-btn" onclick="requestPassword('import-data')" title="Import All Realm Data">📤</button>
+            <input type="file" id="import-file-input" style="display:none;" accept=".json" onchange="importData(event)">
+        </div>
+        <div class="header-content" onclick="switchPage('landing')">
+            <img src="GOT_pic.png" class="header-logo" alt="Game of Throws Emblem">
+            <h1>Game of Throws</h1>
+        </div>
+    </header>
+
+    <nav>
+        <button class="nav-btn" onclick="switchPage('rankings')">Rankings</button>
+        <button class="nav-btn" onclick="switchPage('teams')">Teams</button>
+        <button class="nav-btn" onclick="switchPage('matchups')">Matchups</button>
+        <button class="nav-btn" onclick="switchPage('standings')">Standings</button>
+        <button class="nav-btn" onclick="switchPage('current-season')">Current Season</button>
+        <button class="nav-btn" onclick="switchPage('seasons')">History</button>
+        <button class="nav-btn" onclick="switchPage('champions')">Hall of Champions</button>
+        <button class="nav-btn" onclick="switchPage('accolades')">Accolades</button>
+        <!-- Past Seasons Dropdown Menu Tab -->
+        <div class="dropdown">
+            <button class="dropdown-toggle" id="past-seasons-tab">Past Seasons ▾</button>
+            <div class="dropdown-content" id="past-seasons-dropdown">
+                <!-- Dynamically populated past seasons -->
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- LANDING PAGE (Not in navigation bar) -->
+        <section id="landing" class="page active">
+            <div class="medieval-slab-container">
+                <h2 class="medieval-title">A Winner is Coming</h2>
+                <div class="medieval-slab">
+                    <div class="commandments-content">
+                        <h3>Commandments:</h3>
+                        <ul>
+                            <li>Thou shall not cheat, and agree to being punished upon doing so</li>
+                            <li>Thou shall not collude with other players that result in injustice to the rest of the league</li>
+                            <li>Thou shall be respectful, and at times tastefully disrespectful</li>
+                            <li>Thou shall do their own research</li>
+                            <li>Thou shall keep up with league rules and responsibilities</li>
+                            <li>Thou shall play the full season once committed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACCOLADES PAGE -->
+        <section id="accolades" class="page">
+            <div class="page-header">
+                <h2>Realm Accolades</h2>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Accolade</th>
+                            <th>House(s)</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accolades-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CURRENT SEASON PAGE -->
+        <section id="current-season" class="page">
+            <div class="page-header">
+                <h2>Current Season Management</h2>
+                <div class="action-btn-group">
+                    <button class="action-btn" onclick="requestPassword('current-edit')">⚙️ Edit Current Season</button>
+                    <button class="action-btn" onclick="requestPassword('promote-season')" style="background:var(--border-gold); color:var(--bg-dark);">📜 Conclude & Move to History</button>
+                </div>
+            </div>
+
+            <div id="current-edit-container" class="edit-form-container">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Edit Current Season Standings & Playoff Bracket</h3>
+                <div id="current-form-content"></div>
+                <div style="margin-top:1rem;">
+                    <button class="action-btn" onclick="saveCurrentSeasonForm()" style="background:var(--border-gold); color:var(--bg-dark);">💾 Save Current Season</button>
+                </div>
+            </div>
+
+            <div id="current-season-display"></div>
+        </section>
+
+        <!-- RANKINGS PAGE -->
+        <section id="rankings" class="page">
+            <div class="page-header">
+                <h2>Realm Power Rankings</h2>
+            </div>
+            <div class="points-rule-box">
+                📜 House Prestige Rule: 5 PTS for 1st | 2 PTS for 2nd | 1.5 PTS for 3rd | 0.5 PTS for Playoff App | 1 PT for Best Regular Season Record | 1 PT for Most Points in Regular Season | -1 PT for Last
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>House / Owner</th>
+                            <th class="th-gold">1st Finishes</th>
+                            <th class="th-silver">2nd Finishes</th>
+                            <th class="th-bronze">3rd Finishes</th>
+                            <th class="th-brown">Last Finishes</th>
+                            <th>House Prestige</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankings-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TEAMS PAGE -->
+        <section id="teams" class="page">
+            <div class="page-header">
+                <h2>Houses</h2>
+                <button class="action-btn" id="btn-teams" onclick="requestPassword('teams')">⚙️ Edit Settings</button>
+            </div>
+
+            <div id="teams-edit-container" class="edit-form-container">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Edit Houses / Teams</h3>
+                <div id="teams-form-rows"></div>
+                <div style="display:flex; gap:1rem; margin-top:1rem;">
+                    <button class="action-btn" onclick="addTeamRow()">➕ Add House</button>
+                    <button class="action-btn" onclick="saveTeamsForm()" style="background:var(--border-gold); color:var(--bg-dark);">💾 Save Changes</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th onclick="sortTeamsTable('team')">House / Owner ↕</th>
+                            <th onclick="sortTeamsTable('championships')" class="th-gold">Championships ↕</th>
+                            <th onclick="sortTeamsTable('seasonsPlayed')">Seasons Played ↕</th>
+                            <th onclick="sortTeamsTable('playoffApps')">Playoff appearances ↕</th>
+                            <th onclick="sortTeamsTable('champApps')">Champ appearances ↕</th>
+                            <th onclick="sortTeamsTable('champSeasons')">Champ Season ↕</th>
+                            <th onclick="sortTeamsTable('status')">Status ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teams-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- MATCHUPS PAGE -->
+        <section id="matchups" class="page">
+            <div class="page-header">
+                <h2>All-Time Head-to-Head Records</h2>
+                <button class="action-btn" id="btn-matchups" onclick="requestPassword('matchups')">⚙️ Edit Settings</button>
+            </div>
+
+            <div id="matchups-edit-container" class="edit-form-container">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Edit All-Time Records</h3>
+                <div id="matchups-form-rows"></div>
+                <div style="display:flex; gap:1rem; margin-top:1rem;">
+                    <button class="action-btn" onclick="addMatchupRow()">➕ Add Matchup</button>
+                    <button class="action-btn" onclick="saveMatchupsForm()" style="background:var(--border-gold); color:var(--bg-dark);">💾 Save Changes</button>
+                </div>
+            </div>
+
+            <div class="matchups-grid" id="matchups-grid"></div>
+        </section>
+
+        <!-- STANDINGS PAGE -->
+        <section id="standings" class="page">
+            <div class="page-header">
+                <h2>All-Time Standings</h2>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; font-family: 'Cinzel', serif;">
+                <button class="action-btn" onclick="document.getElementById('alltime-section').scrollIntoView({behavior: 'smooth'})">Jump to All Time Record</button>
+                <button class="action-btn" onclick="document.getElementById('regular-section').scrollIntoView({behavior: 'smooth'})">Jump to Regular Season Record</button>
+                <button class="action-btn" onclick="document.getElementById('playoff-section').scrollIntoView({behavior: 'smooth'})">Jump to Playoff Record</button>
+            </div>
+
+            <div id="alltime-section">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">All Time Record</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortStandingsTable('alltime', 'team')">Team ↕</th>
+                                <th onclick="sortStandingsTable('alltime', 'wins')">Wins ↕</th>
+                                <th onclick="sortStandingsTable('alltime', 'losses')">Losses ↕</th>
+                                <th onclick="sortStandingsTable('alltime', 'winPct')">Win % ↕</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alltime-standings-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="regular-section">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Regular season Record</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortStandingsTable('regular', 'team')">Team ↕</th>
+                                <th onclick="sortStandingsTable('regular', 'wins')">Wins ↕</th>
+                                <th onclick="sortStandingsTable('regular', 'losses')">Losses ↕</th>
+                                <th onclick="sortStandingsTable('regular', 'winPct')">Win % ↕</th>
+                            </tr>
+                        </thead>
+                        <tbody id="regular-standings-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="playoff-section">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Playoff Record</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortStandingsTable('playoff', 'team')">Team ↕</th>
+                                <th onclick="sortStandingsTable('playoff', 'wins')">Wins ↕</th>
+                                <th onclick="sortStandingsTable('playoff', 'losses')">Losses ↕</th>
+                                <th onclick="sortStandingsTable('playoff', 'winPct')">Win % ↕</th>
+                            </tr>
+                        </thead>
+                        <tbody id="playoff-standings-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- HISTORY PAGE -->
+        <section id="seasons" class="page">
+            <div class="page-header">
+                <h2>Season Chronicles</h2>
+                <div class="action-btn-group">
+                    <button class="action-btn" onclick="addSeason()" style="display:none;" id="btn-add-season">➕ Add Season</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>🥇 King of the 7 Realms</th>
+                            <th>🥈 Hand of the King</th>
+                            <th>🥉 Comdr. of The KingsGuard</th>
+                            <th>🪙 Master of Coin</th>
+                            <th>💩 Mad King's Fool</th>
+                        </tr>
+                    </thead>
+                    <tbody id="seasons-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- HALL OF CHAMPIONS PAGE -->
+        <section id="champions" class="page">
+            <div class="page-header">
+                <h2>Hall of Champions</h2>
+            </div>
+            <div class="champions-grid" id="champions-grid"></div>
+        </section>
+
+        <!-- DYNAMIC PAST SEASON PAGES CONTAINER -->
+        <div id="past-seasons-pages-container"></div>
+    </main>
+
+    <script>
+        const aaronBannerSvg = `<img src="Aaron_banner.PNG" class="name-banner-icon" alt="Banner">`;
+        const marioBannerSvg = `<img src="Mario_banner.PNG" class="name-banner-icon" alt="Mario Banner">`;
+        const andrewBannerSvg = `<img src="Andrew_banner.PNG" class="name-banner-icon" alt="Andrew Banner">`;
+        const lunaBannerSvg = `<img src="Luna_banner.PNG" class="name-banner-icon" alt="Luna Banner">`;
+        const abnerBannerSvg = `<img src="Abner_banner.PNG" class="name-banner-icon" alt="Abner Banner">`;
+        const edgarBannerSvg = `<img src="Edgar_banner.PNG" class="name-banner-icon" alt="Edgar Banner">`;
+        const justinBannerSvg = `<img src="Justin_banner.PNG" class="name-banner-icon" alt="Justin Banner">`;
+        const mikeBannerSvg = `<img src="Mike_banner.PNG" class="name-banner-icon" alt="Mike Banner">`;
+        const ruckBannerSvg = `<img src="Ruck_banner.PNG" class="name-banner-icon" alt="Ruck Banner">`;
+        const mattBannerSvg = `<img src="Matt_banner.PNG" class="name-banner-icon" alt="Matt Banner">`;
+        const coupleBannerSvg = `<img src="couple_banner.png" class="name-banner-icon" alt="Couple Banner">`;
+        const diegoBannerSvg = `<img src="Diego_banner.png" class="name-banner-icon" alt="Diego Banner">`;
+        const ejBannerSvg = `<img src="EJ_banner.png" class="name-banner-icon" alt="EJ Banner">`;
+        const jeanBannerSvg = `<img src="Jean_banner.png" class="name-banner-icon" alt="Jean Banner">`;
+        const juniorBannerSvg = `<img src="Junior_banner.png" class="name-banner-icon" alt="Junior Banner">`;
+        const nelsonBannerSvg = `<img src="Nelson_banner.png" class="name-banner-icon" alt="Nelson Banner">`;
+        const angelBannerSvg = `<img src="Angel banner.png" class="name-banner-icon" alt="Angel Banner">`;
+        const scottBannerSvg = `<img src="Scott_banner.png" class="name-banner-icon" alt="Scott Banner">`;
+        const finkleBannerSvg = `<img src="Finkle_banner.png" class="name-banner-icon" alt="Finkle Banner">`;
+
+        function formatNameWithBanner(nameStr) {
+            if (!nameStr) return "";
+            let cleaned = nameStr.trim();
+            let lower = cleaned.toLowerCase();
+
+            if (cleaned === "Couple (JM/G)" && !nameStr.includes("couple_banner.png")) {
+                return `<span class="name-with-banner">${nameStr} ${coupleBannerSvg}</span>`;
+            }
+            if (cleaned === "Diego" && !nameStr.includes("Diego_banner.png")) {
+                return `<span class="name-with-banner">${nameStr} ${diegoBannerSvg}</span>`;
+            }
+            if (cleaned === "EJ" && !nameStr.includes("EJ_banner.png")) {
+                return `<span class="name-with-banner">${nameStr} ${ejBannerSvg}</span>`;
+            }
+            if (cleaned === "Jean" && !nameStr.includes("Jean_banner.png")) {
+                return `<span class="name-with-banner">${nameStr} ${jeanBannerSvg}</span>`;
+            }
+            if (cleaned === "Junior" && !nameStr.includes("Junior_banner.png")) {
+                return `<span class="name-with-banner">${nameStr} ${juniorBannerSvg}</span>`;
+            }
+            if (cleaned === "Nelson" && !nameStr.includes("Nelson_banner.png")) {
+                return `<span class="name-with-banner">${nameStr} ${nelsonBannerSvg}</span>`;
+            }
+            if (cleaned === "Angel" && !nameStr.includes("Angel banner.png")) {
+                return `<span class="name-with-banner">${nameStr} ${angelBannerSvg}</span>`;
+            }
+            if (cleaned === "Scott" && !nameStr.includes("Scott_banner.png")) {
+                return `<span class="name-with-banner">${nameStr} ${scottBannerSvg}</span>`;
+            }
+            if (cleaned === "Finkle" && !nameStr.includes("Finkle_banner.png")) {
+                return `<span class="name-with-banner">${nameStr} ${finkleBannerSvg}</span>`;
+            }
+            if (lower === "mario" && !nameStr.includes("Mario_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${marioBannerSvg}</span>`;
+            }
+            if (lower === "aaron" && !nameStr.includes("Aaron_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${aaronBannerSvg}</span>`;
+            }
+            if (lower === "andrew" && !nameStr.includes("Andrew_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${andrewBannerSvg}</span>`;
+            }
+            if (lower === "luna" && !nameStr.includes("Luna_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${lunaBannerSvg}</span>`;
+            }
+            if (lower === "abner" && !nameStr.includes("Abner_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${abnerBannerSvg}</span>`;
+            }
+            if (lower === "edgar" && !nameStr.includes("Edgar_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${edgarBannerSvg}</span>`;
+            }
+            if (lower === "justin" && !nameStr.includes("Justin_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${justinBannerSvg}</span>`;
+            }
+            if (lower === "mike" && !nameStr.includes("Mike_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${mikeBannerSvg}</span>`;
+            }
+            if (lower === "ruck" && !nameStr.includes("Ruck_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${ruckBannerSvg}</span>`;
+            }
+            if (lower === "matt" && !nameStr.includes("Matt_banner.PNG")) {
+                return `<span class="name-with-banner">${nameStr} ${mattBannerSvg}</span>`;
+            }
+
+            return nameStr;
+        }
+
+        const standardSeasonTemplate = {
+            standings: [
+                { team: "House Targaryen (Jon)", owner: "Jon", w: 11, l: 3, pts: 1540 },
+                { team: "House Stark (Arya)", owner: "Arya", w: 10, l: 4, pts: 1490 },
+                { team: "House Lannister (Tyrion)", owner: "Tyrion", w: 9, l: 5, pts: 1420 },
+                { team: "House Baratheon (Stannis)", owner: "Stannis", w: 8, l: 6, pts: 1380 },
+                { team: "House Tyrell (Margaery)", owner: "Margaery", w: 8, l: 6, pts: 1350 },
+                { team: "House Martell (Oberyn)", owner: "Oberyn", w: 7, l: 7, pts: 1300 },
+                { team: "House Greyjoy (Theon)", owner: "Theon", w: 7, l: 7, pts: 1280 },
+                { team: "House Bolton (Ramsay)", owner: "Ramsay", w: 6, l: 8, pts: 1250 },
+                { team: "House Mormont (Jorah)", owner: "Jorah", w: 6, l: 8, pts: 1210 },
+                { team: "House Tully (Edmure)", owner: "Edmure", w: 5, l: 9, pts: 1180 },
+                { team: "House Arryn (Robin)", owner: "Robin", w: 4, l: 10, pts: 1100 },
+                { team: "Night's Watch (Samwell)", owner: "Samwell", w: 3, l: 11, pts: 1050 }
+            ],
+            quarterfinals: [
+                { t1: "House Lannister (Tyrion)", t2: "House Martell (Oberyn)", winner: 1 },
+                { t1: "House Baratheon (Stannis)", t2: "House Tyrell (Margaery)", winner: 1 }
+            ],
+            semifinals: [
+                { t1: "House Targaryen (Jon)", t2: "House Baratheon (Stannis)", winner: 1 },
+                { t1: "House Stark (Arya)", t2: "House Lannister (Tyrion)", winner: 1 }
+            ],
+            thirdPlaceGame: { t1: "House Baratheon (Stannis)", t2: "House Lannister (Tyrion)", winner: 1 },
+            championship: { t1: "House Targaryen (Jon)", t2: "House Stark (Arya)", winner: 1 }
+        };
+
+        const specific2023Template = {
+            standings: [
+                { team: "House Stark (Arya)", owner: "Arya", w: 10, l: 3, pts: 1520 },
+                { team: "House Targaryen (Jon)", owner: "Jon", w: 9, l: 4, pts: 1480 },
+                { team: "House Lannister (Tyrion)", owner: "Tyrion", w: 8, l: 5, pts: 1410 },
+                { team: "House Baratheon (Stannis)", owner: "Stannis", w: 8, l: 5, pts: 1390 },
+                { team: "House Tyrell (Margaery)", owner: "Margaery", w: 7, l: 6, pts: 1340 },
+                { team: "House Martell (Oberyn)", owner: "Oberyn", w: 7, l: 6, pts: 1310 },
+                { team: "House Greyjoy (Theon)", owner: "Theon", w: 6, l: 7, pts: 1260 },
+                { team: "House Bolton (Ramsay)", owner: "Ramsay", w: 5, l: 8, pts: 1220 },
+                { team: "House Mormont (Jorah)", owner: "Jorah", w: 4, l: 9, pts: 1150 },
+                { team: "House Tully (Edmure)", owner: "Edmure", w: 3, l: 10, pts: 1080 }
+            ],
+            quarterfinals: [
+                { t1: "House Lannister (Tyrion)", t2: "House Martell (Oberyn)", winner: 1 },
+                { t1: "House Baratheon (Stannis)", t2: "House Tyrell (Margaery)", winner: 1 }
+            ],
+            semifinals: [
+                { t1: "House Stark (Arya)", t2: "House Baratheon (Stannis)", winner: 1 },
+                { t1: "House Targaryen (Jon)", t2: "House Lannister (Tyrion)", winner: 1 }
+            ],
+            thirdPlaceGame: { t1: "House Baratheon (Stannis)", t2: "House Lannister (Tyrion)", winner: 1 },
+            championship: { t1: "House Stark (Arya)", t2: "House Targaryen (Jon)", winner: 1 }
+        };
+
+        let realmData = JSON.parse(localStorage.getItem('gameOfThrowsData')) || {};
+
+        if (!realmData.standings) {
+            realmData.standings = [
+                { team: "House Targaryen (Jon)", status: "active" },
+                { team: "House Stark (Arya)", status: "active" },
+                { team: "House Lannister (Tyrion)", status: "active" },
+                { team: "House Baratheon (Stannis)", status: "active" },
+                { team: "House Tyrell (Margaery)", status: "active" },
+                { team: "House Martell (Oberyn)", status: "active" },
+                { team: "House Greyjoy (Theon)", status: "active" },
+                { team: "House Bolton (Ramsay)", status: "active" },
+                { team: "House Mormont (Jorah)", status: "active" },
+                { team: "House Tully (Edmure)", status: "active" },
+                { team: "House Arryn (Robin)", status: "active" },
+                { team: "Night's Watch (Samwell)", status: "active" }
+            ];
+        } else {
+            realmData.standings = realmData.standings.map(s => ({ 
+                team: s.team || s.house || "", 
+                status: s.status || "active" 
+            }));
+        }
+
+        if (!realmData.currentSeason) {
+            realmData.currentSeason = {
+                year: "2026",
+                standings: realmData.standings.filter(s => s.status !== 'exiled to Essos').map(s => ({ team: s.team, owner: s.team, w: 0, l: 0, pts: 0 })),
+                quarterfinals: [
+                    { t1: "", t2: "", winner: 0 },
+                    { t1: "", t2: "", winner: 0 }
+                ],
+                semifinals: [
+                    { t1: "", t2: "", winner: 0 },
+                    { t1: "", t2: "", winner: 0 }
+                ],
+                thirdPlaceGame: { t1: "", t2: "", winner: 0 },
+                championship: { t1: "", t2: "", winner: 0 }
+            };
+        }
+
+        if (!realmData.matchups) {
+            realmData.matchups = [
+                { house: "House Targaryen (Jon)", opposingHouse: "House Stark", houseW: 58, opposingHouseW: 36, bowlName: "" },
+                { house: "House Stark (Arya)", opposingHouse: "House Targaryen", houseW: 54, opposingHouseW: 40, bowlName: "" },
+                { house: "House Lannister (Tyrion)", opposingHouse: "House Baratheon", houseW: 50, opposingHouseW: 44, bowlName: "" },
+                { house: "House Baratheon (Stannis)", opposingHouse: "House Lannister", houseW: 48, opposingHouseW: 46, bowlName: "" },
+                { house: "House Tyrell (Margaery)", opposingHouse: "House Martell", houseW: 47, opposingHouseW: 47, bowlName: "" },
+                { house: "House Martell (Oberyn)", opposingHouse: "House Tyrell", houseW: 46, opposingHouseW: 48, bowlName: "" },
+                { house: "House Greyjoy (Theon)", opposingHouse: "House Bolton", houseW: 45, opposingHouseW: 49, bowlName: "" },
+                { house: "House Bolton (Ramsay)", opposingHouse: "House Greyjoy", houseW: 44, opposingHouseW: 50, bowlName: "" },
+                { house: "House Mormont (Jorah)", opposingHouse: "Night's Watch", houseW: 43, opposingHouseW: 51, bowlName: "" },
+                { house: "House Tully (Edmure)", opposingHouse: "House Arryn", houseW: 41, opposingHouseW: 53, bowlName: "" },
+                { house: "House Arryn (Robin)", opposingHouse: "House Tully", houseW: 39, opposingHouseW: 55, bowlName: "" },
+                { house: "Night's Watch (Samwell)", opposingHouse: "House Mormont", houseW: 36, opposingHouseW: 58, bowlName: "" }
+            ];
+        }
+
+        if (!realmData.seasons || realmData.seasons.length === 0) {
+            realmData.seasons = [
+                { year: "2025" }, { year: "2024" }, { year: "2023" }, { year: "2022" }, { year: "2021" }, { year: "2020" }, { year: "2019" }
+            ];
+        }
+
+        if (!realmData.pastSeasonDetails) realmData.pastSeasonDetails = {};
+        realmData.seasons.forEach(s => {
+            if (!realmData.pastSeasonDetails[s.year]) {
+                realmData.pastSeasonDetails[s.year] = s.year === "2023" 
+                    ? JSON.parse(JSON.stringify(specific2023Template)) 
+                    : JSON.parse(JSON.stringify(standardSeasonTemplate));
+            } else {
+                let ps = realmData.pastSeasonDetails[s.year];
+                if (ps.standings) {
+                    ps.standings = ps.standings.map(st => ({ team: st.team, owner: st.owner, w: st.w || 0, l: st.l || 0, pts: st.pts || 1200 }));
+                    ps.standings.sort((a, b) => b.w - a.w || (b.pts || 0) - (a.pts || 0));
+                }
+            }
+        });
+
+        localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+
+        let editModes = {
+            teams: false,
+            matchups: false,
+            currentSeason: false,
+            pastSeason: null
+        };
+
+        let activePageId = 'landing';
+        let teamSortColumn = 'team';
+        let teamSortDirection = 'asc';
+
+        let standingsSortState = {
+            alltime: { column: 'winPct', direction: 'desc' },
+            regular: { column: 'winPct', direction: 'desc' },
+            playoff: { column: 'winPct', direction: 'desc' }
+        };
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(realmData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "game_of_throws_realm_data.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData(event) {
+            const fileReader = new FileReader();
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0], "UTF-8");
+                fileReader.onload = (e) => {
+                    try {
+                        const parsedData = JSON.parse(e.target.result);
+                        if (parsedData && parsedData.standings && parsedData.seasons) {
+                            realmData = parsedData;
+                            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+                            renderData();
+                            alert("Realm data successfully imported!");
+                        } else {
+                            alert("Invalid data format in JSON file.");
+                        }
+                    } catch (error) {
+                        alert("Error parsing JSON file.");
+                    }
+                };
+            }
+        }
+
+        function requestPassword(page) {
+            if (page === 'export-data') {
+                let pwd = prompt("Enter password to export data:");
+                if (pwd === "Domicuatro10!") {
+                    exportData();
+                } else if (pwd !== null) {
+                    alert("Incorrect password!");
+                }
+                return;
+            } else if (page === 'import-data') {
+                let pwd = prompt("Enter password to import data:");
+                if (pwd === "Domicuatro10!") {
+                    document.getElementById('import-file-input').click();
+                } else if (pwd !== null) {
+                    alert("Incorrect password!");
+                }
+                return;
+            }
+
+            let isEditing = false;
+            if (page === 'teams') isEditing = editModes.teams;
+            else if (page === 'matchups') isEditing = editModes.matchups;
+            else if (page === 'current-edit') isEditing = editModes.currentSeason;
+            else if (page.startsWith('past-season-')) {
+                let yr = page.replace('past-season-', '');
+                isEditing = editModes.pastSeason === yr;
+            } else if (page.startsWith('delete-season-')) {
+                let yr = page.replace('delete-season-', '');
+                let pwd = prompt("Enter password to delete season:");
+                if (pwd === "Domicuatro10!") {
+                    deleteSeason(yr);
+                } else if (pwd !== null) {
+                    alert("Incorrect password!");
+                }
+                return;
+            }
+
+            if (isEditing) {
+                toggleEdit(page);
+            } else {
+                let pwd = prompt("Enter password to edit settings:");
+                if (pwd === "Domicuatro10!") {
+                    if (page === 'promote-season') {
+                        concludeCurrentSeason();
+                    } else {
+                        toggleEdit(page);
+                    }
+                } else if (pwd !== null) {
+                    alert("Incorrect password!");
+                }
+            }
+        }
+
+        function deleteSeason(year) {
+            if (!confirm(`Are you sure you want to completely delete the ${year} season? This action cannot be undone.`)) return;
+
+            realmData.seasons = realmData.seasons.filter(s => s.year !== year);
+            delete realmData.pastSeasonDetails[year];
+
+            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+            renderData();
+            switchPage('seasons');
+            alert(`Season ${year} has been deleted.`);
+        }
+
+        function concludeCurrentSeason() {
+            if (!confirm("Are you sure you want to conclude the current season, archive it into history, and reset for a new season?")) return;
+            
+            let cs = realmData.currentSeason;
+            let yr = cs.year || "2026";
+
+            syncBracketData(cs);
+
+            realmData.pastSeasonDetails[yr] = JSON.parse(JSON.stringify(cs));
+            
+            if (!realmData.seasons.some(s => s.year === yr)) {
+                realmData.seasons.unshift({ year: yr });
+            }
+
+            let nextYr = (parseInt(yr) + 1).toString();
+            realmData.currentSeason = {
+                year: nextYr,
+                standings: realmData.standings.filter(s => s.status !== 'exiled to Essos').map(s => ({ team: s.team, owner: s.team, w: 0, l: 0, pts: 0 })),
+                quarterfinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
+                semifinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
+                thirdPlaceGame: { t1: "", t2: "", winner: 0 },
+                championship: { t1: "", t2: "", winner: 0 }
+            };
+
+            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+            renderData();
+            alert(`Season ${yr} successfully concluded and archived into history! Current season updated to ${nextYr}.`);
+            switchPage('current-season');
+        }
+
+        function switchPage(pageId) {
+            activePageId = pageId;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('nav button, .dropdown-toggle').forEach(b => b.classList.remove('active'));
+            
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+
+            if (pageId.startsWith('past-season-')) {
+                document.getElementById('past-seasons-tab').classList.add('active');
+            } else {
+                const btn = document.querySelector(`nav button[onclick*="'${pageId}'"]`);
+                if (btn) btn.classList.add('active');
+            }
+        }
+
+        function cleanName(str) {
+            if (!str) return "";
+            return str.replace(/👑|💰/g, '').replace(/\([^)]*\)/g, '').trim();
+        }
+
+        function sortDataNewestToOldest() {
+            realmData.seasons.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+        }
+
+        function getAvailableTeams() {
+            return realmData.standings.map(s => s.team);
+        }
+
+        function sortStandingsArray(standingsArr) {
+            if (!standingsArr) return;
+            standingsArr.sort((a, b) => {
+                let wDiff = (b.w || 0) - (a.w || 0);
+                if (wDiff !== 0) return wDiff;
+                return (b.pts || 0) - (a.pts || 0);
+            });
+        }
+
+        function calculateTeamStats() {
+            let stats = {};
+
+            realmData.standings.forEach(row => {
+                let name = row.team.trim();
+                if (name) {
+                    stats[name] = { 
+                        championships: 0, 
+                        seasonsPlayed: 0, 
+                        playoffApps: 0, 
+                        champApps: 0, 
+                        champSeasons: [],
+                        status: row.status || "active"
+                    };
+                }
+            });
+
+            realmData.seasons.forEach(season => {
+                const details = realmData.pastSeasonDetails[season.year];
+                if (!details || !details.standings) return;
+
+                details.standings.forEach((st) => {
+                    let tName = st.team.trim();
+                    if (!stats[tName]) {
+                        stats[tName] = { 
+                            championships: 0, 
+                            seasonsPlayed: 0, 
+                            playoffApps: 0, 
+                            champApps: 0, 
+                            champSeasons: [],
+                            status: "active"
+                        };
+                    }
+                    stats[tName].seasonsPlayed += 1;
+                });
+
+                let playoffTeams = new Set();
+                if (details.byes) { details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim()); }); }
+                if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim()); if (q.t2) playoffTeams.add(q.t2.trim()); }); }
+                if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim()); if (sf.t2) playoffTeams.add(sf.t2.trim()); }); }
+
+                playoffTeams.forEach(ptName => {
+                    let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === ptName.toLowerCase());
+                    if (!matchedKey) {
+                        stats[ptName] = { championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: [], status: "active" };
+                        matchedKey = ptName;
+                    }
+                    stats[matchedKey].playoffApps += 1;
+                });
+
+                if (details.championship) {
+                    const c1 = details.championship.t1 ? details.championship.t1.trim() : "";
+                    const c2 = details.championship.t2 ? details.championship.t2.trim() : "";
+                    const winnerNum = details.championship.winner;
+                    const champTeam = winnerNum === 2 ? c2 : c1;
+
+                    [c1, c2].forEach(cTeam => {
+                        if (!cTeam) return;
+                        let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === cTeam.toLowerCase());
+                        if (!matchedKey) {
+                            stats[cTeam] = { championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: [], status: "active" };
+                            matchedKey = cTeam;
+                        }
+                        stats[matchedKey].champApps += 1;
+                    });
+
+                    if (champTeam) {
+                        let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === champTeam.toLowerCase());
+                        if (matchedKey) {
+                            stats[matchedKey].championships += 1;
+                            if (!stats[matchedKey].champSeasons.includes(season.year)) {
+                                stats[matchedKey].champSeasons.push(season.year);
+                            }
+                        }
+                    }
+                }
+            });
+
+            return Object.keys(stats).map(team => {
+                let data = stats[team];
+                data.champSeasons.sort((a, b) => parseInt(a) - parseInt(b));
+                let formattedStatus = data.status === 'exiled to Essos' ? '<em>exiled to Essos</em>' : data.status;
+                return {
+                    team: formatNameWithBanner(team),
+                    rawTeam: team,
+                    championships: data.championships,
+                    seasonsPlayed: data.seasonsPlayed,
+                    playoffApps: data.playoffApps,
+                    champApps: data.champApps,
+                    champSeasons: data.champSeasons.length > 0 ? data.champSeasons.join(', ') : '-',
+                    status: formattedStatus,
+                    rawStatus: data.status
+                };
+            });
+        }
+
+        function calculateRegularSeasonStandings() {
+            let stats = {};
+            realmData.standings.forEach(row => {
+                let name = row.team.trim();
+                if (name) {
+                    stats[name] = { wins: 0, losses: 0 };
+                }
+            });
+
+            realmData.seasons.forEach(season => {
+                const details = realmData.pastSeasonDetails[season.year];
+                if (!details || !details.standings) return;
+
+                details.standings.forEach(st => {
+                    let tName = st.team.trim();
+                    let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === tName.toLowerCase());
+                    if (!matchedKey) {
+                        stats[tName] = { wins: 0, losses: 0 };
+                        matchedKey = tName;
+                    }
+                    stats[matchedKey].wins += (st.w || 0);
+                    stats[matchedKey].losses += (st.l || 0);
+                });
+            });
+
+            if (realmData.currentSeason && realmData.currentSeason.standings) {
+                realmData.currentSeason.standings.forEach(st => {
+                    let tName = st.team.trim();
+                    let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === tName.toLowerCase());
+                    if (!matchedKey) {
+                        stats[tName] = { wins: 0, losses: 0 };
+                        matchedKey = tName;
+                    }
+                    stats[matchedKey].wins += (st.w || 0);
+                    stats[matchedKey].losses += (st.l || 0);
+                });
+            }
+
+            let arr = Object.keys(stats).map(team => {
+                let data = stats[team];
+                let totalGames = data.wins + data.losses;
+                let winPct = totalGames > 0 ? (data.wins / totalGames) : 0;
+                return {
+                    team: formatNameWithBanner(team),
+                    wins: data.wins,
+                    losses: data.losses,
+                    winPct: winPct
+                };
+            });
+
+            return arr;
+        }
+
+        function calculatePlayoffStandings() {
+            let stats = {};
+            realmData.standings.forEach(row => {
+                let name = row.team.trim();
+                if (name) {
+                    stats[name] = { wins: 0, losses: 0 };
+                }
+            });
+
+            const processPlayoffs = (details) => {
+                if (!details) return;
+                const addGame = (winnerTeam, loserTeam) => {
+                    if (winnerTeam) {
+                        let wKey = Object.keys(stats).find(k => k.toLowerCase() === winnerTeam.trim().toLowerCase());
+                        if (!wKey) { stats[winnerTeam.trim()] = { wins: 0, losses: 0 }; wKey = winnerTeam.trim(); }
+                        stats[wKey].wins += 1;
+                    }
+                    if (loserTeam) {
+                        let lKey = Object.keys(stats).find(k => k.toLowerCase() === loserTeam.trim().toLowerCase());
+                        if (!lKey) { stats[loserTeam.trim()] = { wins: 0, losses: 0 }; lKey = loserTeam.trim(); }
+                        stats[lKey].losses += 1;
+                    }
+                };
+
+                if (details.quarterfinals) {
+                    details.quarterfinals.forEach(qf => {
+                        if (qf.winner === 1 || qf.winner === 2) {
+                            let wTeam = qf.winner === 2 ? qf.t2 : qf.t1;
+                            let lTeam = qf.winner === 2 ? qf.t1 : qf.t2;
+                            addGame(wTeam, lTeam);
+                        }
+                    });
+                }
+                if (details.semifinals) {
+                    details.semifinals.forEach(sf => {
+                        if (sf.winner === 1 || sf.winner === 2) {
+                            let wTeam = sf.winner === 2 ? sf.t2 : sf.t1;
+                            let lTeam = sf.winner === 2 ? sf.t1 : sf.t2;
+                            addGame(wTeam, lTeam);
+                        }
+                    });
+                }
+                if (details.thirdPlaceGame && (details.thirdPlaceGame.winner === 1 || details.thirdPlaceGame.winner === 2)) {
+                    let tp = details.thirdPlaceGame;
+                    let wTeam = tp.winner === 2 ? tp.t2 : tp.t1;
+                    let lTeam = tp.winner === 2 ? tp.t1 : tp.t2;
+                    addGame(wTeam, lTeam);
+                }
+                if (details.championship && (details.championship.winner === 1 || details.championship.winner === 2)) {
+                    let ch = details.championship;
+                    let wTeam = ch.winner === 2 ? ch.t2 : ch.t1;
+                    let lTeam = ch.winner === 2 ? ch.t1 : ch.t2;
+                    addGame(wTeam, lTeam);
+                }
+            };
+
+            realmData.seasons.forEach(season => {
+                processPlayoffs(realmData.pastSeasonDetails[season.year]);
+            });
+
+            if (realmData.currentSeason && areAllTeams14Games(realmData.currentSeason)) {
+                processPlayoffs(realmData.currentSeason);
+            }
+
+            let arr = Object.keys(stats).map(team => {
+                let data = stats[team];
+                let totalGames = data.wins + data.losses;
+                let winPct = totalGames > 0 ? (data.wins / totalGames) : 0;
+                return {
+                    team: formatNameWithBanner(team),
+                    wins: data.wins,
+                    losses: data.losses,
+                    winPct: winPct
+                };
+            });
+
+            return arr;
+        }
+
+        function calculateAllTimeStandings() {
+            let reg = calculateRegularSeasonStandings();
+            let play = calculatePlayoffStandings();
+            let combined = {};
+
+            reg.forEach(r => {
+                let cleanT = r.team;
+                combined[cleanT] = { team: r.team, wins: r.wins, losses: r.losses };
+            });
+
+            play.forEach(p => {
+                let cleanT = p.team;
+                if (!combined[cleanT]) {
+                    combined[cleanT] = { team: p.team, wins: 0, losses: 0 };
+                }
+                combined[cleanT].wins += p.wins;
+                combined[cleanT].losses += p.losses;
+            });
+
+            return Object.keys(combined).map(t => {
+                let data = combined[t];
+                let totalGames = data.wins + data.losses;
+                let winPct = totalGames > 0 ? (data.wins / totalGames) : 0;
+                return {
+                    team: data.team,
+                    wins: data.wins,
+                    losses: data.losses,
+                    winPct: winPct
+                };
+            });
+        }
+
+        function sortTeamsTable(column) {
+            if (teamSortColumn === column) {
+                teamSortDirection = teamSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                teamSortColumn = column;
+                teamSortDirection = 'asc';
+            }
+            renderData();
+        }
+
+        function sortStandingsTable(tableType, column) {
+            let state = standingsSortState[tableType];
+            if (state.column === column) {
+                state.direction = state.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                state.column = column;
+                state.direction = column === 'winPct' || column === 'wins' ? 'desc' : 'asc';
+            }
+            renderData();
+        }
+
+        function calculateRankings() {
+            let stats = {};
+
+            realmData.standings.forEach(row => {
+                let name = row.team.trim();
+                if (name) {
+                    stats[name] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
+                }
+            });
+
+            realmData.seasons.forEach(season => {
+                const details = realmData.pastSeasonDetails[season.year];
+                if (!details) return;
+
+                if (details.championship) {
+                    const champWinnerTeam = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
+                    let matchedC = Object.keys(stats).find(k => k.toLowerCase() === champWinnerTeam.toLowerCase()) || champWinnerTeam;
+                    if (matchedC) {
+                        if (!stats[matchedC]) stats[matchedC] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
+                        stats[matchedC].firsts += 1;
+                    }
+
+                    const champLoserTeam = details.championship.winner === 2 ? details.championship.t1 : details.championship.t2;
+                    let matchedR = Object.keys(stats).find(k => k.toLowerCase() === champLoserTeam.toLowerCase()) || champLoserTeam;
+                    if (matchedR) {
+                        if (!stats[matchedR]) stats[matchedR] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
+                        stats[matchedR].seconds += 1;
+                    }
+                }
+
+                if (details.thirdPlaceGame) {
+                    const tpWinnerTeam = details.thirdPlaceGame.winner === 2 ? details.thirdPlaceGame.t2 : details.thirdPlaceGame.t1;
+                    let matchedTP = Object.keys(stats).find(k => k.toLowerCase() === tpWinnerTeam.toLowerCase()) || tpWinnerTeam;
+                    if (matchedTP) {
+                        if (!stats[matchedTP]) stats[matchedTP] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
+                        stats[matchedTP].thirds += 1;
+                    }
+                }
+
+                if (details.standings && details.standings.length > 0) {
+                    const lastTeamObj = details.standings[details.standings.length - 1];
+                    if (lastTeamObj) {
+                        let matchedS = Object.keys(stats).find(k => k.toLowerCase() === lastTeamObj.team.toLowerCase()) || lastTeamObj.team;
+                        if (matchedS) {
+                            if (!stats[matchedS]) stats[matchedS] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
+                            stats[matchedS].lasts += 1;
+                        }
+                    }
+
+                    let bestW = details.standings[0].w;
+                    let topTeamObj = details.standings.find(st => st.w === bestW);
+                    if (topTeamObj) {
+                        let matchedBR = Object.keys(stats).find(k => k.toLowerCase() === topTeamObj.team.toLowerCase());
+                        if (matchedBR) stats[matchedBR].bestRecordReg += 1;
+                    }
+
+                    let maxPts = -1;
+                    details.standings.forEach(st => {
+                        let pts = st.pts || 0;
+                        if (pts > maxPts) maxPts = pts;
+                    });
+                    if (maxPts > 0) {
+                        details.standings.filter(st => (st.pts || 0) === maxPts).forEach(st => {
+                            let matchedMP = Object.keys(stats).find(k => k.toLowerCase() === st.team.toLowerCase());
+                            if (matchedMP) stats[matchedMP].mostPtsReg += 1;
+                        });
+                    }
+                }
+
+                let playoffTeams = new Set();
+                if (details.byes) { details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim()); }); }
+                if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim()); if (q.t2) playoffTeams.add(q.t2.trim()); }); }
+                if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim()); if (sf.t2) playoffTeams.add(sf.t2.trim()); }); }
+
+                playoffTeams.forEach(ptName => {
+                    let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === ptName.toLowerCase());
+                    if (matchedKey) {
+                        stats[matchedKey].playoffApps += 1;
+                    }
+                });
+            });
+
+            let arr = Object.keys(stats).map(team => {
+                let data = stats[team];
+                let pts = (data.firsts * 5) + (data.seconds * 2) + (data.thirds * 1.5) + (data.playoffApps * 0.5) + (data.bestRecordReg * 1) + (data.mostPtsReg * 1) + (data.lasts * -1);
+                return { team: formatNameWithBanner(team), firsts: data.firsts, seconds: data.seconds, thirds: data.thirds, lasts: data.lasts, pts };
+            });
+
+            arr.sort((a, b) => b.pts - a.pts);
+
+            let rankedArr = [];
+            let currentRank = 1;
+            for (let i = 0; i < arr.length; i++) {
+                if (i > 0 && arr[i].pts === arr[i - 1].pts) {
+                    let prevRankNum = rankedArr[i - 1].rankNum;
+                    rankedArr.push({
+                        ...arr[i],
+                        rankNum: prevRankNum,
+                        displayRank: `${prevRankNum} (Tie)`
+                    });
+                    if (!rankedArr[i - 1].displayRank.includes("(Tie)")) {
+                        rankedArr[i - 1].displayRank = `${prevRankNum} (Tie)`;
+                    }
+                } else {
+                    currentRank = i + 1;
+                    rankedArr.push({
+                        ...arr[i],
+                        rankNum: currentRank,
+                        displayRank: `${currentRank}`
+                    });
+                }
+            }
+
+            return rankedArr;
+        }
+
+        function calculateAccolades() {
+            let records = {
+                "Iron Throne: Most championships": { val: -1, teams: [] },
+                "Running Up: Most 2nds": { val: -1, teams: [] },
+                "Most championship appearances": { val: -1, teams: [] },
+                "Most playoff appearances": { val: -1, teams: [] },
+                "Reek: last finishes": { val: -1, teams: [] },
+                "Most Points in a Season": { val: -1, teams: [] },
+                "Least Points in a Season": { val: Infinity, teams: [] },
+                "Most Reg Season Wins": { val: -1, teams: [] },
+                "Most Reg Season losses": { val: -1, teams: [] },
+                "Most Playoff Wins": { val: -1, teams: [] },
+                "Most Playoff losses": { val: -1, teams: [] }
+            };
+
+            let teamStats = {};
+            realmData.standings.forEach(row => {
+                let name = row.team.trim();
+                if (name) {
+                    teamStats[name] = { firsts: 0, seconds: 0, champApps: 0, playoffApps: 0, lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0 };
+                }
+            });
+
+            // Gather across all past seasons
+            realmData.seasons.forEach(season => {
+                const details = realmData.pastSeasonDetails[season.year];
+                if (!details) return;
+
+                // Standings & Points
+                if (details.standings && details.standings.length > 0) {
+                    details.standings.forEach((st, idx) => {
+                        let tName = st.team.trim();
+                        let pts = st.pts || 0;
+
+                        if (!teamStats[tName]) {
+                            teamStats[tName] = { firsts: 0, seconds: 0, champApps: 0, playoffApps: 0, lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0 };
+                        }
+
+                        // Reg wins/losses
+                        teamStats[tName].regWins += (st.w || 0);
+                        teamStats[tName].regLosses += (st.l || 0);
+
+                        // Points in a season
+                        let pKey = "Most Points in a Season";
+                        if (pts > records[pKey].val) {
+                            records[pKey].val = pts;
+                            records[pKey].teams = [tName + ` (${season.year})`];
+                        } else if (pts === records[pKey].val) {
+                            records[pKey].teams.push(tName + ` (${season.year})`);
+                        }
+
+                        let lKey = "Least Points in a Season";
+                        if (pts < records[lKey].val) {
+                            records[lKey].val = pts;
+                            records[lKey].teams = [tName + ` (${season.year})`];
+                        } else if (pts === records[lKey].val) {
+                            records[lKey].teams.push(tName + ` (${season.year})`);
+                        }
+
+                        // Last finishes
+                        if (idx === details.standings.length - 1) {
+                            teamStats[tName].lasts += 1;
+                        }
+                    });
+                }
+
+                // Championship & 2nds
+                if (details.championship) {
+                    let c1 = details.championship.t1 ? details.championship.t1.trim() : "";
+                    let c2 = details.championship.t2 ? details.championship.t2.trim() : "";
+                    let winnerNum = details.championship.winner;
+
+                    if (winnerNum === 1 || winnerNum === 2) {
+                        let champ = winnerNum === 2 ? c2 : c1;
+                        let runner = winnerNum === 2 ? c1 : c2;
+
+                        if (champ && teamStats[champ]) teamStats[champ].firsts += 1;
+                        if (runner && teamStats[runner]) teamStats[runner].seconds += 1;
+                    }
+
+                    [c1, c2].forEach(cTeam => {
+                        if (cTeam && teamStats[cTeam]) teamStats[cTeam].champApps += 1;
+                    });
+                }
+
+                // Playoff apps & wins/losses
+                let playoffTeams = new Set();
+                if (details.byes) { details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim()); }); }
+                if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim()); if (q.t2) playoffTeams.add(q.t2.trim()); }); }
+                if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim()); if (sf.t2) playoffTeams.add(sf.t2.trim()); }); }
+
+                playoffTeams.forEach(ptName => {
+                    if (teamStats[ptName]) teamStats[ptName].playoffApps += 1;
+                });
+
+                // Playoff match wins/losses helper
+                const processPlayoffGame = (game) => {
+                    if (!game || (game.winner !== 1 && game.winner !== 2)) return;
+                    let wTeam = game.winner === 2 ? game.t2 : game.t1;
+                    let lTeam = game.winner === 2 ? game.t1 : game.t2;
+                    if (wTeam && teamStats[wTeam]) teamStats[wTeam].playWins += 1;
+                    if (lTeam && teamStats[lTeam]) teamStats[lTeam].playLosses += 1;
+                };
+
+                if (details.quarterfinals) details.quarterfinals.forEach(processPlayoffGame);
+                if (details.semifinals) details.semifinals.forEach(processPlayoffGame);
+                if (details.thirdPlaceGame) processPlayoffGame(details.thirdPlaceGame);
+                if (details.championship) processPlayoffGame(details.championship);
+            });
+
+            // Map team stats to accolade records
+            Object.keys(teamStats).forEach(tName => {
+                let ts = teamStats[tName];
+
+                // 1st finishes
+                let k1 = "Iron Throne: Most championships";
+                if (ts.firsts > records[k1].val) { records[k1].val = ts.firsts; records[k1].teams = [tName]; }
+                else if (ts.firsts === records[k1].val && ts.firsts > 0) records[k1].teams.push(tName);
+
+                // 2nd finishes
+                let k2 = "Running Up: Most 2nds";
+                if (ts.seconds > records[k2].val) { records[k2].val = ts.seconds; records[k2].teams = [tName]; }
+                else if (ts.seconds === records[k2].val && ts.seconds > 0) records[k2].teams.push(tName);
+
+                // Champ apps
+                let k3 = "Most championship appearances";
+                if (ts.champApps > records[k3].val) { records[k3].val = ts.champApps; records[k3].teams = [tName]; }
+                else if (ts.champApps === records[k3].val && ts.champApps > 0) records[k3].teams.push(tName);
+
+                // Playoff apps
+                let k4 = "Most playoff appearances";
+                if (ts.playoffApps > records[k4].val) { records[k4].val = ts.playoffApps; records[k4].teams = [tName]; }
+                else if (ts.playoffApps === records[k4].val && ts.playoffApps > 0) records[k4].teams.push(tName);
+
+                // Last finishes
+                let k5 = "Reek: last finishes";
+                if (ts.lasts > records[k5].val) { records[k5].val = ts.lasts; records[k5].teams = [tName]; }
+                else if (ts.lasts === records[k5].val && ts.lasts > 0) records[k5].teams.push(tName);
+
+                // Reg season wins
+                let k6 = "Most Reg Season Wins";
+                if (ts.regWins > records[k6].val) { records[k6].val = ts.regWins; records[k6].teams = [tName]; }
+                else if (ts.regWins === records[k6].val && ts.regWins > 0) records[k6].teams.push(tName);
+
+                // Reg season losses
+                let k7 = "Most Reg Season losses";
+                if (ts.regLosses > records[k7].val) { records[k7].val = ts.regLosses; records[k7].teams = [tName]; }
+                else if (ts.regLosses === records[k7].val && ts.regLosses > 0) records[k7].teams.push(tName);
+
+                // Playoff wins
+                let k8 = "Most Playoff Wins";
+                if (ts.playWins > records[k8].val) { records[k8].val = ts.playWins; records[k8].teams = [tName]; }
+                else if (ts.playWins === records[k8].val && ts.playWins > 0) records[k8].teams.push(tName);
+
+                // Playoff losses
+                let k9 = "Most Playoff losses";
+                if (ts.playLosses > records[k9].val) { records[k9].val = ts.playLosses; records[k9].teams = [tName]; }
+                else if (ts.playLosses === records[k9].val && ts.playLosses > 0) records[k9].teams.push(tName);
+            });
+
+            return records;
+        }
+
+        function renderAccolades() {
+            let acc = calculateAccolades();
+            let tbody = document.getElementById('accolades-body');
+            if (!tbody) return;
+
+            let html = '';
+            for (let title in acc) {
+                let data = acc[title];
+                let formattedTeams = data.teams.length > 0 ? data.teams.map(t => formatNameWithBanner(t)).join(', ') : '-';
+                let valDisplay = data.val === -1 || data.val === Infinity ? '-' : data.val;
+                html += `
+                    <tr>
+                        <td><strong>${title}</strong></td>
+                        <td>${formattedTeams}</td>
+                        <td><strong style="color:var(--border-gold);">${valDisplay}</strong></td>
+                    </tr>
+                `;
+            }
+            tbody.innerHTML = html;
+        }
+
+        function addSeason() {
+            sortDataNewestToOldest();
+            const newestYear = realmData.seasons.length > 0 ? (parseInt(realmData.seasons[0].year) + 1).toString() : "2026";
+            
+            realmData.seasons.unshift({ year: newestYear });
+
+            if (!realmData.pastSeasonDetails[newestYear]) {
+                realmData.pastSeasonDetails[newestYear] = JSON.parse(JSON.stringify(standardSeasonTemplate));
+            }
+
+            renderData();
+            switchPage(`past-season-${newestYear}`);
+            toggleEditPastSeason(newestYear);
+        }
+
+        function addTeamRow() {
+            realmData.standings.push({ team: "", status: "active" });
+            renderTeamsForm();
+        }
+
+        function removeTeamRow(index) {
+            realmData.standings.splice(index, 1);
+            renderTeamsForm();
+        }
+
+        function renderTeamsForm() {
+            const container = document.getElementById('teams-form-rows');
+            container.innerHTML = realmData.standings.map((row, index) => {
+                const currentStatus = row.status || "active";
+                return `
+                    <div class="edit-row">
+                        <div>
+                            <label>House / Owner</label>
+                            <input type="text" value="${row.team || ''}" data-t-index="${index}" data-t-field="team" placeholder="House Name">
+                        </div>
+                        <div>
+                            <label>Status</label>
+                            <select data-t-index="${index}" data-t-field="status">
+                                <option value="active" ${currentStatus === 'active' ? 'selected' : ''}>active</option>
+                                <option value="exiled to Essos" ${currentStatus === 'exiled to Essos' ? 'selected' : ''}>exiled to Essos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button class="action-btn danger-btn" onclick="removeTeamRow(${index})" style="margin-top:1.2rem;">X</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function saveTeamsForm() {
+            const rows = document.querySelectorAll('#teams-form-rows .edit-row');
+            rows.forEach((r, index) => {
+                const teamInput = r.querySelector('[data-t-field="team"]');
+                const statusSelect = r.querySelector('[data-t-field="status"]');
+                if (realmData.standings[index]) {
+                    realmData.standings[index].team = teamInput.value.trim();
+                    realmData.standings[index].status = statusSelect.value;
+                }
+            });
+
+            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+            editModes.teams = false;
+            renderData();
+        }
+
+        function addMatchupRow() {
+            realmData.matchups.push({ house: "", opposingHouse: "", houseW: "", opposingHouseW: "", bowlName: "" });
+            renderMatchupsForm();
+        }
+
+        function removeMatchupRow(index) {
+            realmData.matchups.splice(index, 1);
+            renderMatchupsForm();
+        }
+
+        function renderMatchupsForm() {
+            const teams = getAvailableTeams();
+            const container = document.getElementById('matchups-form-rows');
+            
+            container.innerHTML = realmData.matchups.map((row, index) => {
+                const houseOptions = teams.map(t => `<option value="${t}" ${row.house === t ? 'selected' : ''}>${t}</option>`).join('');
+                const opposingOptions = teams.map(t => `<option value="${t}" ${row.opposingHouse === t ? 'selected' : ''}>${t}</option>`).join('');
+                
+                let winOptionsHouse = '<option value="">Select Wins</option>';
+                let winOptionsOpposing = '<option value="">Select Wins</option>';
+                for (let i = 0; i <= 100; i++) {
+                    winOptionsHouse += `<option value="${i}" ${Number(row.houseW) === i ? 'selected' : ''}>${i}</option>`;
+                    winOptionsOpposing += `<option value="${i}" ${Number(row.opposingHouseW) === i ? 'selected' : ''}>${i}</option>`;
+                }
+
+                return `
+                    <div class="edit-row" style="grid-template-columns: 2fr 2fr 1fr 1fr 2fr auto;">
+                        <div>
+                            <label>House</label>
+                            <select data-m-index="${index}" data-m-field="house" style="background:#0c0d10; border:1px solid #2c2f3b; color:var(--text-main); padding:0.3rem; width:100%; font-family:'Lora',serif;">
+                                <option value="">Select House</option>
+                                ${houseOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Opposing House</label>
+                            <select data-m-index="${index}" data-m-field="opposingHouse" style="background:#0c0d10; border:1px solid #2c2f3b; color:var(--text-main); padding:0.3rem; width:100%; font-family:'Lora',serif;">
+                                <option value="">Select Opponent</option>
+                                ${opposingOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label>House Wins</label>
+                            <select data-m-index="${index}" data-m-field="houseW" style="background:#0c0d10; border:1px solid #2c2f3b; color:var(--text-main); padding:0.3rem; width:100%; font-family:'Lora',serif;">
+                                ${winOptionsHouse}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Opponent Wins</label>
+                            <select data-m-index="${index}" data-m-field="opposingHouseW" style="background:#0c0d10; border:1px solid #2c2f3b; color:var(--text-main); padding:0.3rem; width:100%; font-family:'Lora',serif;">
+                                ${winOptionsOpposing}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Bowl Name (Optional)</label>
+                            <input type="text" value="${row.bowlName || ''}" data-m-index="${index}" data-m-field="bowlName" placeholder="e.g. Iron Bowl">
+                        </div>
+                        <div>
+                            <button class="action-btn danger-btn" onclick="removeMatchupRow(${index})" style="margin-top:1.2rem;">X</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function areAllTeams14Games(cs) {
+            if (!cs || !cs.standings || cs.standings.length === 0) return false;
+            for (let st of cs.standings) {
+                let played = (st.w || 0) + (st.l || 0);
+                if (played < 14) return false;
+            }
+            return true;
+        }
+
+        function renderCurrentSeasonForm() {
+            let cs = realmData.currentSeason;
+            let container = document.getElementById('current-form-content');
+
+            let standingsHtml = cs.standings.map((st, idx) => {
+                let teamNameVal = st.owner || st.team.replace(/\([^)]*\)/g, '').trim();
+                return `
+                    <div class="edit-row" style="grid-template-columns: 2fr 2fr 1fr 1fr 1fr;">
+                        <div>
+                            <label>House / Owner</label>
+                            <input type="text" value="${st.team || ''}" class="cs-input" data-cs-type="standings" data-cs-index="${idx}" data-cs-field="team" placeholder="House Name">
+                        </div>
+                        <div>
+                            <label>Team Name</label>
+                            <input type="text" value="${teamNameVal}" class="cs-input" data-cs-type="standings" data-cs-index="${idx}" data-cs-field="owner" placeholder="Team Name">
+                        </div>
+                        <div>
+                            <label>Wins</label>
+                            <input type="number" value="${st.w}" class="cs-input" data-cs-type="standings" data-cs-index="${idx}" data-cs-field="w">
+                        </div>
+                        <div>
+                            <label>Losses</label>
+                            <input type="number" value="${st.l}" class="cs-input" data-cs-type="standings" data-cs-index="${idx}" data-cs-field="l">
+                        </div>
+                        <div>
+                            <label>Points</label>
+                            <input type="number" step="0.1" value="${st.pts || 0}" class="cs-input" data-cs-type="standings" data-cs-index="${idx}" data-cs-field="pts">
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            let bracketEditHtml = '';
+            if (areAllTeams14Games(cs)) {
+                syncBracketData(cs);
+                let qfHtml = cs.quarterfinals.map((qf, idx) => `
+                    <div class="bracket-matchup">
+                        <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${qf.t1}</div>
+                        <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${qf.t2}</div>
+                        <div><label style="font-size:0.75rem; color:var(--border-gold);">Winner (0, 1, or 2):</label> <input type="number" min="0" max="2" value="${qf.winner !== undefined ? qf.winner : 0}" class="cs-input" data-cs-type="qf" data-cs-index="${idx}" data-cs-field="winner" style="width:60px; display:inline-block;"></div>
+                    </div>
+                `).join('');
+
+                let sfHtml = cs.semifinals.map((sf, idx) => `
+                    <div class="bracket-matchup">
+                        <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${sf.t1 || 'TBD'}</div>
+                        <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${sf.t2 || 'TBD'}</div>
+                        <div><label style="font-size:0.75rem; color:var(--border-gold);">Winner (0, 1, or 2):</label> <input type="number" min="0" max="2" value="${sf.winner !== undefined ? sf.winner : 0}" class="cs-input" data-cs-type="sf" data-cs-index="${idx}" data-cs-field="winner" style="width:60px; display:inline-block;"></div>
+                    </div>
+                `).join('');
+
+                const tp = cs.thirdPlaceGame || { t1: '', t2: '', winner: 0 };
+                let tpHtml = `
+                    <div class="bracket-matchup">
+                        <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${tp.t1 || 'TBD'}</div>
+                        <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${tp.t2 || 'TBD'}</div>
+                        <div><label style="font-size:0.75rem; color:var(--border-gold);">Winner (0, 1, or 2):</label> <input type="number" min="0" max="2" value="${tp.winner !== undefined ? tp.winner : 0}" class="cs-input" data-cs-type="tp" data-cs-index="0" data-cs-field="winner" style="width:60px; display:inline-block;"></div>
+                    </div>
+                `;
+
+                const champ = cs.championship || { t1: '', t2: '', winner: 0 };
+                let champHtml = `
+                    <div class="bracket-matchup" style="border-color: var(--border-gold);">
+                        <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${champ.t1 || 'TBD'}</div>
+                        <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${champ.t2 || 'TBD'}</div>
+                        <div><label style="font-size:0.75rem; color:var(--border-gold);">Winner (0, 1, or 2):</label> <input type="number" min="0" max="2" value="${champ.winner !== undefined ? champ.winner : 0}" class="cs-input" data-cs-type="champ" data-cs-index="0" data-cs-field="winner" style="width:60px; display:inline-block;"></div>
+                    </div>
+                `;
+
+                bracketEditHtml = `
+                    <h4 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 1.5rem 0 1rem 0;">Edit Playoff Bracket Winners (Enter 0 for undecided)</h4>
+                    <div class="bracket-container">
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Quarterfinals</div>
+                            ${qfHtml}
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Semifinals</div>
+                            ${sfHtml}
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Championship Battle</div>
+                            ${champHtml}
+                            <div style="font-family:'Cinzel',serif; font-size:0.80rem; color:var(--border-gold); margin:1.5rem 0 0.4rem 0; text-transform:uppercase;">Third Place Game</div>
+                            ${tpHtml}
+                        </div>
+                    </div>
+                `;
+            } else {
+                bracketEditHtml = `<p style="color:var(--text-muted); font-style:italic; margin-top:1rem;">Playoff bracket editing will unlock once all teams have completed 14 games (Wins + Losses = 14).</p>`;
+            }
+
+            container.innerHTML = `
+                <div style="margin-bottom:1rem;">
+                    <label style="font-family:'Cinzel',serif; color:var(--border-gold);">Season Year</label>
+                    <input type="text" id="cs-year-input" value="${cs.year || '2026'}" class="current-season-input" style="width:150px;">
+                </div>
+                <h4 style="font-family:'Cinzel',serif; color:var(--border-gold); margin:1rem 0 0.5rem 0;">Standings & Points</h4>
+                ${standingsHtml}
+                <button class="action-btn" onclick="addCurrentSeasonTeamRow()" style="margin-top:0.5rem;">➕ Add Team</button>
+                ${bracketEditHtml}
+            `;
+        }
+
+        function addCurrentSeasonTeamRow() {
+            if (!realmData.currentSeason.standings) realmData.currentSeason.standings = [];
+            realmData.currentSeason.standings.push({ team: "", owner: "", w: 0, l: 0, pts: 0 });
+            renderCurrentSeasonForm();
+        }
+
+        function saveCurrentSeasonForm() {
+            let cs = realmData.currentSeason;
+            cs.year = document.getElementById('cs-year-input').value.trim() || "2026";
+
+            let inputs = document.querySelectorAll('#current-form-content .cs-input');
+            inputs.forEach(input => {
+                let type = input.getAttribute('data-cs-type');
+                let idx = parseInt(input.getAttribute('data-cs-index'));
+                let field = input.getAttribute('data-cs-field');
+
+                if (type === 'standings') {
+                    if (cs.standings[idx]) {
+                        if (field === 'w' || field === 'l' || field === 'pts') {
+                            cs.standings[idx][field] = parseFloat(input.value) || 0;
+                        } else if (field === 'team') {
+                            cs.standings[idx].team = input.value;
+                        } else if (field === 'owner') {
+                            cs.standings[idx].owner = input.value;
+                        }
+                    }
+                } else if (type === 'qf') {
+                    if (cs.quarterfinals[idx]) {
+                        cs.quarterfinals[idx][field] = field === 'winner' ? parseInt(input.value) || 0 : input.value;
+                    }
+                } else if (type === 'sf') {
+                    if (cs.semifinals[idx]) {
+                        cs.semifinals[idx][field] = field === 'winner' ? parseInt(input.value) || 0 : input.value;
+                    }
+                } else if (type === 'tp') {
+                    if (cs.thirdPlaceGame) {
+                        cs.thirdPlaceGame[field] = field === 'winner' ? parseInt(input.value) || 0 : input.value;
+                    }
+                } else if (type === 'champ') {
+                    if (cs.championship) {
+                        cs.championship[field] = field === 'winner' ? parseInt(input.value) || 0 : input.value;
+                    }
+                }
+            });
+
+            if (cs.standings) {
+                sortStandingsArray(cs.standings);
+            }
+
+            syncBracketData(cs);
+            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+            editModes.currentSeason = false;
+            renderData();
+        }
+
+        function toggleEditPastSeason(year) {
+            if (editModes.pastSeason === year) {
+                const section = document.getElementById(`past-season-${year}`);
+                if (section) {
+                    const inputs = section.querySelectorAll('.past-season-input');
+                    
+                    if (!realmData.pastSeasonDetails[year]) {
+                        realmData.pastSeasonDetails[year] = year === "2023" 
+                            ? JSON.parse(JSON.stringify(specific2023Template)) 
+                            : JSON.parse(JSON.stringify(standardSeasonTemplate));
+                    }
+                    const details = realmData.pastSeasonDetails[year];
+
+                    inputs.forEach(input => {
+                        const type = input.getAttribute('data-ps-type');
+                        const idx = parseInt(input.getAttribute('data-ps-index'));
+                        const field = input.getAttribute('data-ps-field');
+
+                        if (type === 'standings') {
+                            if (details.standings[idx]) {
+                                details.standings[idx][field] = (field === 'w' || field === 'l' || field === 'pts') ? parseFloat(input.value) || 0 : input.value;
+                            }
+                        } else if (type === 'qf') {
+                            if (details.quarterfinals[idx]) {
+                                details.quarterfinals[idx][field] = field === 'winner' ? parseInt(input.value) : input.value;
+                            }
+                        } else if (type === 'sf') {
+                            if (details.semifinals[idx]) {
+                                details.semifinals[idx][field] = field === 'winner' ? parseInt(input.value) : input.value;
+                            }
+                        } else if (type === 'tp') {
+                            if (details.thirdPlaceGame) {
+                                details.thirdPlaceGame[field] = field === 'winner' ? parseInt(input.value) : input.value;
+                            }
+                        } else if (type === 'champ') {
+                            details.championship[field] = field === 'winner' ? parseInt(input.value) : input.value;
+                        }
+                    });
+
+                    if (details.standings) {
+                        sortStandingsArray(details.standings);
+                    }
+
+                    syncBracketData(details);
+                    localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+                }
+                editModes.pastSeason = null;
+            } else {
+                editModes.pastSeason = year;
+            }
+            renderData();
+            switchPage(`past-season-${year}`);
+        }
+
+        function syncBracketData(details) {
+            let numTeams = details.standings ? details.standings.length : 12;
+
+            if (details.standings && details.standings.length >= 6) {
+                details.byes = [
+                    { team: details.standings[0].team },
+                    { team: details.standings[1].team }
+                ];
+
+                if (!details.quarterfinals || details.quarterfinals.length < 2 || !details.quarterfinals[0].t1) {
+                    details.quarterfinals = [
+                        { t1: details.standings[2].team, t2: details.standings[5].team, winner: 0 },
+                        { t1: details.standings[3].team, t2: details.standings[4].team, winner: 0 }
+                    ];
+                } else {
+                    details.quarterfinals[0].t1 = details.standings[2].team;
+                    details.quarterfinals[0].t2 = details.standings[5].team;
+                    details.quarterfinals[1].t1 = details.standings[3].team;
+                    details.quarterfinals[1].t2 = details.standings[4].team;
+                }
+
+                let qf0Winner = details.quarterfinals[0].winner;
+                let qf1Winner = details.quarterfinals[1].winner;
+
+                let qf0WinnerTeam = qf0Winner === 2 ? details.quarterfinals[0].t2 : (qf0Winner === 1 ? details.quarterfinals[0].t1 : "");
+                let qf1WinnerTeam = qf1Winner === 2 ? details.quarterfinals[1].t2 : (qf1Winner === 1 ? details.quarterfinals[1].t1 : "");
+
+                let rankQf0 = qf0WinnerTeam ? details.standings.findIndex(st => st.team === qf0WinnerTeam) : -1;
+                let rankQf1 = qf1WinnerTeam ? details.standings.findIndex(st => st.team === qf1WinnerTeam) : -1;
+
+                let semi1TeamA = details.byes[0].team;
+                let semi1TeamB = (qf0WinnerTeam && qf1WinnerTeam) ? (rankQf0 > rankQf1 ? qf0WinnerTeam : qf1WinnerTeam) : "";
+                let semi2TeamA = details.byes[1].team;
+                let semi2TeamB = (qf0WinnerTeam && qf1WinnerTeam) ? (rankQf0 > rankQf1 ? qf1WinnerTeam : qf0WinnerTeam) : "";
+
+                if (!details.semifinals || details.semifinals.length < 2 || !details.semifinals[0].t1) {
+                    details.semifinals = [
+                        { t1: semi1TeamA, t2: semi1TeamB, winner: 0 },
+                        { t1: semi2TeamA, t2: semi2TeamB, winner: 0 }
+                    ];
+                } else {
+                    details.semifinals[0].t1 = semi1TeamA;
+                    details.semifinals[0].t2 = semi1TeamB;
+                    details.semifinals[1].t1 = semi2TeamA;
+                    details.semifinals[1].t2 = semi2TeamB;
+                }
+
+                let s0Winner = details.semifinals[0].winner;
+                let s1Winner = details.semifinals[1].winner;
+
+                let semi0WinnerTeam = s0Winner === 2 ? details.semifinals[0].t2 : (s0Winner === 1 ? details.semifinals[0].t1 : "");
+                let semi0LoserTeam = s0Winner === 2 ? details.semifinals[0].t1 : (s0Winner === 1 ? details.semifinals[0].t2 : "");
+                let semi1WinnerTeam = s1Winner === 2 ? details.semifinals[1].t2 : (s1Winner === 1 ? details.semifinals[1].t1 : "");
+                let semi1LoserTeam = s1Winner === 2 ? details.semifinals[1].t1 : (s1Winner === 1 ? details.semifinals[1].t2 : "");
+
+                if (!details.championship || !details.championship.t1) {
+                    details.championship = { t1: semi0WinnerTeam, t2: semi1WinnerTeam, winner: 0 };
+                } else {
+                    details.championship.t1 = semi0WinnerTeam;
+                    details.championship.t2 = semi1WinnerTeam;
+                }
+
+                if (!details.thirdPlaceGame || !details.thirdPlaceGame.t1) {
+                    details.thirdPlaceGame = { t1: semi0LoserTeam, t2: semi1LoserTeam, winner: 0 };
+                } else {
+                    details.thirdPlaceGame.t1 = semi0LoserTeam;
+                    details.thirdPlaceGame.t2 = semi1LoserTeam;
+                }
+            }
+        }
+
+        function getTeamSeed(details, teamName) {
+            if (!details || !details.standings || !teamName) return "";
+            let cleanTeam = teamName.trim().toLowerCase();
+            let index = details.standings.findIndex(st => st.team.trim().toLowerCase() === cleanTeam);
+            if (index !== -1) {
+                return `(#${index + 1}) `;
+            }
+            return "";
+        }
+
+        function getMasterOfCoin(details) {
+            if (!details || !details.standings || details.standings.length === 0) return "-";
+            let topTeam = details.standings[0];
+            let maxPts = topTeam.pts || 0;
+            let topTeams = [topTeam.team];
+
+            for (let i = 1; i < details.standings.length; i++) {
+                let p = details.standings[i].pts || 0;
+                if (p > maxPts) {
+                    maxPts = p;
+                    topTeams = [details.standings[i].team];
+                } else if (p === maxPts) {
+                    topTeams.push(details.standings[i].team);
+                }
+            }
+
+            return topTeams.map(t => formatNameWithBanner(t)).join(', ');
+        }
+
+        function renderPastSeasonsDropdownAndPages() {
+            const dropdownContainer = document.getElementById('past-seasons-dropdown');
+            const pagesContainer = document.getElementById('past-seasons-pages-container');
+
+            if (!realmData.pastSeasonDetails) realmData.pastSeasonDetails = {};
+
+            let dropdownHtml = '';
+            let pagesHtml = '';
+
+            const years = realmData.seasons.map(s => s.year).sort((a, b) => parseInt(b) - parseInt(a));
+            const availableTeams = getAvailableTeams();
+
+            years.forEach(year => {
+                dropdownHtml += `<button onclick="switchPage('past-season-${year}')">${year} Season</button>`;
+
+                const isEditing = editModes.pastSeason === year;
+
+                if (!realmData.pastSeasonDetails[year]) {
+                    realmData.pastSeasonDetails[year] = year === "2023" 
+                        ? JSON.parse(JSON.stringify(specific2023Template)) 
+                        : JSON.parse(JSON.stringify(standardSeasonTemplate));
+                }
+
+                const details = realmData.pastSeasonDetails[year];
+                syncBracketData(details);
+
+                let standingsRows = details.standings.map((row, idx) => {
+                    const teamNameVal = row.owner || row.team.replace(/\([^)]*\)/g, '').trim();
+                    const ptsVal = row.pts !== undefined ? row.pts : 1200;
+
+                    if (isEditing) {
+                        let teamDropdownOptions = availableTeams.map(t => `<option value="${t}" ${row.team === t ? 'selected' : ''}>${t}</option>`).join('');
+                        return `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td>
+                                    <select class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="team">
+                                        <option value="">Select House</option>
+                                        ${teamDropdownOptions}
+                                        <option value="${row.team}" ${!availableTeams.includes(row.team) ? 'selected' : ''}>${row.team}</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" value="${teamNameVal}" class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="owner"></td>
+                                <td><input type="number" value="${row.w}" class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="w"></td>
+                                <td><input type="number" value="${row.l}" class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="l"></td>
+                                <td><input type="number" step="0.1" value="${ptsVal}" class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="pts"></td>
+                            </tr>
+                        `;
+                    } else {
+                        return `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td><strong>${formatNameWithBanner(row.team)}</strong></td>
+                                <td>${formatNameWithBanner(teamNameVal)}</td>
+                                <td>${row.w}</td>
+                                <td>${row.l}</td>
+                                <td>${ptsVal}</td>
+                            </tr>
+                        `;
+                    }
+                }).join('');
+
+                let byesHtml = (details.byes || []).map((b) => {
+                    let seedText = getTeamSeed(details, b.team);
+                    return `
+                        <div class="bracket-matchup" style="border-style:dashed;">
+                            <div class="bracket-team"><span>${seedText}${formatNameWithBanner(b.team)}</span><span class="bye-indicator">BYE</span></div>
+                        </div>
+                    `;
+                }).join('');
+
+                let qfHtml = details.quarterfinals.map((qf, idx) => {
+                    const t1Win = qf.winner === 1 ? 'winner' : '';
+                    const t2Win = qf.winner === 2 ? 'winner' : '';
+                    if (isEditing) {
+                        return `
+                            <div class="bracket-matchup">
+                                <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${qf.t1}</div>
+                                <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${qf.t2}</div>
+                                <div><label style="font-size:0.75rem; color:var(--border-gold);">Winner (0, 1, or 2):</label> <input type="number" min="0" max="2" value="${qf.winner !== undefined ? qf.winner : 0}" class="past-season-input" data-ps-type="qf" data-ps-index="${idx}" data-ps-field="winner" style="width:60px; display:inline-block;"></div>
+                            </div>
+                        `;
+                    } else {
+                        let seed1 = getTeamSeed(details, qf.t1);
+                        let seed2 = getTeamSeed(details, qf.t2);
+                        return `
+                            <div class="bracket-matchup">
+                                <div class="bracket-team ${t1Win}"><span>${seed1}${formatNameWithBanner(qf.t1)}</span></div>
+                                <div class="bracket-team ${t2Win}"><span>${seed2}${formatNameWithBanner(qf.t2)}</span></div>
+                            </div>
+                        `;
+                    }
+                }).join('');
+
+                let semisHtml = details.semifinals.map((semi, idx) => {
+                    const t1Win = semi.winner === 1 ? 'winner' : '';
+                    const t2Win = semi.winner === 2 ? 'winner' : '';
+                    if (isEditing) {
+                        return `
+                            <div class="bracket-matchup">
+                                <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${semi.t1 || 'TBD'}</div>
+                                <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${semi.t2 || 'TBD'}</div>
+                                <div><label style="font-size:0.75rem; color:var(--border-gold);">Winner (0, 1, or 2):</label> <input type="number" min="0" max="2" value="${semi.winner !== undefined ? semi.winner : 0}" class="past-season-input" data-ps-type="sf" data-ps-index="${idx}" data-ps-field="winner" style="width:60px; display:inline-block;"></div>
+                            </div>
+                        `;
+                    } else {
+                        let seed1 = getTeamSeed(details, semi.t1);
+                        let seed2 = getTeamSeed(details, semi.t2);
+                        return `
+                            <div class="bracket-matchup">
+                                <div class="bracket-team ${t1Win}"><span>${seed1}${formatNameWithBanner(semi.t1 || 'TBD')}</span></div>
+                                <div class="bracket-team ${t2Win}"><span>${seed2}${formatNameWithBanner(semi.t2 || 'TBD')}</span></div>
+                            </div>
+                        `;
+                    }
+                }).join('');
+
+                const tp = details.thirdPlaceGame || { t1: '', t2: '', winner: 0 };
+                const tp1Win = tp.winner === 1 ? 'winner' : '';
+                const tp2Win = tp.winner === 2 ? 'winner' : '';
+                
+                let tpHtml = '';
+                if (isEditing) {
+                    tpHtml = `
+                        <div class="bracket-matchup">
+                            <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${tp.t1 || 'TBD'}</div>
+                            <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${tp.t2 || 'TBD'}</div>
+                            <div><label style="font-size:0.75rem; color:var(--border-gold);">Winner (0, 1, or 2):</label> <input type="number" min="0" max="2" value="${tp.winner !== undefined ? tp.winner : 0}" class="past-season-input" data-ps-type="tp" data-ps-index="0" data-ps-field="winner" style="width:60px; display:inline-block;"></div>
+                        </div>
+                    `;
+                } else {
+                    let seed1 = getTeamSeed(details, tp.t1);
+                    let seed2 = getTeamSeed(details, tp.t2);
+                    tpHtml = `
+                        <div class="bracket-matchup">
+                            <div class="bracket-team ${tp1Win}"><span>${seed1}${formatNameWithBanner(tp.t1 || 'TBD')}</span></div>
+                            <div class="bracket-team ${tp2Win}"><span>${seed2}${formatNameWithBanner(tp.t2 || 'TBD')}</span></div>
+                        </div>
+                    `;
+                }
+
+                const champ = details.championship || { t1: '', t2: '', winner: 0 };
+                
+                let champHtml = '';
+                if (isEditing) {
+                    champHtml = `
+                        <div class="bracket-matchup" style="border-color: var(--border-gold);">
+                            <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${champ.t1 || 'TBD'}</div>
+                            <div style="margin-bottom:0.4rem; font-size:0.85rem; color:var(--text-main);">${champ.t2 || 'TBD'}</div>
+                            <div><label style="font-size:0.75rem; color:var(--border-gold);">Winner (0, 1, or 2):</label> <input type="number" min="0" max="2" value="${champ.winner !== undefined ? champ.winner : 0}" class="past-season-input" data-ps-type="champ" data-ps-index="0" data-ps-field="winner" style="width:60px; display:inline-block;"></div>
+                        </div>
+                    `;
+                } else {
+                    const c1Win = champ.winner === 1 ? 'winner' : '';
+                    const c2Win = champ.winner === 2 ? 'winner' : '';
+                    let seed1 = getTeamSeed(details, champ.t1);
+                    let seed2 = getTeamSeed(details, champ.t2);
+                    champHtml = `
+                        <div class="bracket-matchup" style="border-color: var(--border-gold);">
+                            <div class="bracket-team ${c1Win}"><span>${champ.winner === 1 ? '👑 ' : ''}${seed1}${formatNameWithBanner(champ.t1 || 'TBD')}</span></div>
+                            <div class="bracket-team ${c2Win}"><span>${champ.winner === 2 ? '👑 ' : ''}${seed2}${formatNameWithBanner(champ.t2 || 'TBD')}</span></div>
+                        </div>
+                    `;
+                }
+
+                pagesHtml += `
+                    <section id="past-season-${year}" class="page">
+                        <div class="page-header">
+                            <h2>${year} Realm Season</h2>
+                            <div class="action-btn-group">
+                                <button class="action-btn" onclick="requestPassword('past-season-${year}')">${isEditing ? '💾 Save Changes' : '⚙️ Edit Season'}</button>
+                                <button class="action-btn danger-btn" onclick="requestPassword('delete-season-${year}')">🗑️ Delete Season</button>
+                            </div>
+                        </div>
+                        
+                        <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Season Standings</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>House / Owner</th>
+                                        <th>Team Name</th>
+                                        <th>W</th>
+                                        <th>L</th>
+                                        <th>Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${standingsRows || '<tr><td colspan="6">No standings recorded.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Playoff Bracket</h3>
+                        <div class="bracket-container">
+                            <div class="bracket-round">
+                                <div class="bracket-round-title">Quarterfinals & Byes</div>
+                                ${byesHtml}
+                                ${qfHtml}
+                            </div>
+                            <div class="bracket-round">
+                                <div class="bracket-round-title">Semifinals</div>
+                                ${semisHtml}
+                            </div>
+                            <div class="bracket-round">
+                                <div class="bracket-round-title">Championship Battle</div>
+                                ${champHtml}
+                                <div style="font-family:'Cinzel',serif; font-size:0.80rem; color:var(--border-gold); margin:1.5rem 0 0.4rem 0; text-transform:uppercase;">Third Place Game</div>
+                                ${tpHtml}
+                            </div>
+                        </div>
+                    </section>
+                `;
+            });
+
+            dropdownContainer.innerHTML = dropdownHtml;
+            pagesContainer.innerHTML = pagesHtml;
+        }
+
+        function renderCurrentSeasonDisplay() {
+            let cs = realmData.currentSeason;
+            if (!cs) return;
+
+            let standingsRows = cs.standings.map((row, idx) => {
+                let teamNameVal = row.owner || row.team.replace(/\([^)]*\)/g, '').trim();
+                let ptsVal = row.pts !== undefined ? row.pts : 0;
+                return `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td><strong>${formatNameWithBanner(row.team)}</strong></td>
+                        <td>${formatNameWithBanner(teamNameVal)}</td>
+                        <td>${row.w}</td>
+                        <td>${row.l}</td>
+                        <td>${ptsVal}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            let bracketDisplayHtml = '';
+            if (areAllTeams14Games(cs)) {
+                syncBracketData(cs);
+                let byesHtml = (cs.byes || []).map((b) => {
+                    let seedText = getTeamSeed(cs, b.team);
+                    return `
+                        <div class="bracket-matchup" style="border-style:dashed;">
+                            <div class="bracket-team"><span>${seedText}${formatNameWithBanner(b.team)}</span><span class="bye-indicator">BYE</span></div>
+                        </div>
+                    `;
+                }).join('');
+
+                let qfHtml = cs.quarterfinals.map((qf) => {
+                    const t1Win = qf.winner === 1 ? 'winner' : '';
+                    const t2Win = qf.winner === 2 ? 'winner' : '';
+                    let seed1 = getTeamSeed(cs, qf.t1);
+                    let seed2 = getTeamSeed(cs, qf.t2);
+                    return `
+                        <div class="bracket-matchup">
+                            <div class="bracket-team ${t1Win}"><span>${seed1}${formatNameWithBanner(qf.t1 || 'TBD')}</span></div>
+                            <div class="bracket-team ${t2Win}"><span>${seed2}${formatNameWithBanner(qf.t2 || 'TBD')}</span></div>
+                        </div>
+                    `;
+                }).join('');
+
+                let semisHtml = cs.semifinals.map((semi) => {
+                    const t1Win = semi.winner === 1 ? 'winner' : '';
+                    const t2Win = semi.winner === 2 ? 'winner' : '';
+                    let seed1 = getTeamSeed(cs, semi.t1);
+                    let seed2 = getTeamSeed(cs, semi.t2);
+                    return `
+                        <div class="bracket-matchup">
+                            <div class="bracket-team ${t1Win}"><span>${seed1}${formatNameWithBanner(semi.t1 || 'TBD')}</span></div>
+                            <div class="bracket-team ${t2Win}"><span>${seed2}${formatNameWithBanner(semi.t2 || 'TBD')}</span></div>
+                        </div>
+                    `;
+                }).join('');
+
+                const tp = cs.thirdPlaceGame || { t1: '', t2: '', winner: 0 };
+                const tp1Win = tp.winner === 1 ? 'winner' : '';
+                const tp2Win = tp.winner === 2 ? 'winner' : '';
+                let tpSeed1 = getTeamSeed(cs, tp.t1);
+                let tpSeed2 = getTeamSeed(cs, tp.t2);
+                let tpHtml = `
+                    <div class="bracket-matchup">
+                        <div class="bracket-team ${tp1Win}"><span>${tpSeed1}${formatNameWithBanner(tp.t1 || 'TBD')}</span></div>
+                        <div class="bracket-team ${tp2Win}"><span>${tpSeed2}${formatNameWithBanner(tp.t2 || 'TBD')}</span></div>
+                    </div>
+                `;
+
+                const champ = cs.championship || { t1: '', t2: '', winner: 0 };
+                const c1Win = champ.winner === 1 ? 'winner' : '';
+                const c2Win = champ.winner === 2 ? 'winner' : '';
+                let champSeed1 = getTeamSeed(cs, champ.t1);
+                let champSeed2 = getTeamSeed(cs, champ.t2);
+                let champHtml = `
+                    <div class="bracket-matchup" style="border-color: var(--border-gold);">
+                        <div class="bracket-team ${c1Win}"><span>${champ.winner === 1 ? '👑 ' : ''}${champSeed1}${formatNameWithBanner(champ.t1 || 'TBD')}</span></div>
+                        <div class="bracket-team ${c2Win}"><span>${champ.winner === 2 ? '👑 ' : ''}${champSeed2}${formatNameWithBanner(champ.t2 || 'TBD')}</span></div>
+                    </div>
+                `;
+
+                bracketDisplayHtml = `
+                    <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Playoff Bracket</h3>
+                    <div class="bracket-container">
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Quarterfinals & Byes</div>
+                            ${byesHtml}
+                            ${qfHtml}
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Semifinals</div>
+                            ${semisHtml}
+                        </div>
+                        <div class="bracket-round">
+                            <div class="bracket-round-title">Championship Battle</div>
+                            ${champHtml}
+                            <div style="font-family:'Cinzel',serif; font-size:0.80rem; color:var(--border-gold); margin:1.5rem 0 0.4rem 0; text-transform:uppercase;">Third Place Game</div>
+                            ${tpHtml}
+                        </div>
+                    </div>
+                `;
+            } else {
+                bracketDisplayHtml = `<p style="color:var(--text-muted); font-style:italic; margin-top:2rem;">Playoff bracket will appear once all teams have completed 14 games (Wins + Losses = 14).</p>`;
+            }
+
+            document.getElementById('current-season-display').innerHTML = `
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">${cs.year || '2026'} Standings</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>House / Owner</th>
+                                <th>Team Name</th>
+                                <th>W</th>
+                                <th>L</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${standingsRows || '<tr><td colspan="6">No standings recorded.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+                ${bracketDisplayHtml}
+            `;
+        }
+
+        function renderData() {
+            sortDataNewestToOldest();
+
+            const allRankings = calculateRankings();
+            document.getElementById('rankings-body').innerHTML = allRankings.map((row) => {
+                return `<tr>
+                    <td><strong>${row.displayRank}</strong></td>
+                    <td><strong>${row.team}</strong></td>
+                    <td>${row.firsts}</td>
+                    <td>${row.seconds}</td>
+                    <td>${row.thirds}</td>
+                    <td>${row.lasts}</td>
+                    <td><strong style="color: var(--border-gold);">${row.pts} PTS</strong></td>
+                </tr>`;
+            }).join('');
+
+            renderAccolades();
+
+            const teamsEditContainer = document.getElementById('teams-edit-container');
+            if (editModes.teams) {
+                teamsEditContainer.classList.add('active');
+                renderTeamsForm();
+            } else {
+                teamsEditContainer.classList.remove('active');
+            }
+
+            let teamStats = calculateTeamStats();
+            
+            teamStats.sort((a, b) => {
+                let valA = a[teamSortColumn];
+                let valB = b[teamSortColumn];
+
+                if (typeof valA === 'string') {
+                    valA = valA.replace(/<[^>]*>/g, '').toLowerCase();
+                    valB = valB.replace(/<[^>]*>/g, '').toLowerCase();
+                }
+
+                if (valA < valB) return teamSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return teamSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            document.getElementById('teams-body').innerHTML = teamStats.map(row => {
+                return `<tr>
+                    <td><strong>${row.team}</strong></td>
+                    <td><strong style="color:var(--border-gold);">${row.championships}</strong></td>
+                    <td>${row.seasonsPlayed}</td>
+                    <td>${row.playoffApps}</td>
+                    <td>${row.champApps}</td>
+                    <td>${row.champSeasons}</td>
+                    <td>${row.status}</td>
+                </tr>`;
+            }).join('');
+
+            let allTimeArr = calculateAllTimeStandings();
+            let regArr = calculateRegularSeasonStandings();
+            let playArr = calculatePlayoffStandings();
+
+            const sortHelper = (arr, type) => {
+                let st = standingsSortState[type];
+                arr.sort((a, b) => {
+                    let valA = a[st.column];
+                    let valB = b[st.column];
+                    if (typeof valA === 'string') {
+                        valA = valA.replace(/<[^>]*>/g, '').toLowerCase();
+                        valB = valB.replace(/<[^>]*>/g, '').toLowerCase();
+                    }
+                    if (valA < valB) return st.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return st.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            };
+
+            sortHelper(allTimeArr, 'alltime');
+            sortHelper(regArr, 'regular');
+            sortHelper(playArr, 'playoff');
+
+            document.getElementById('alltime-standings-body').innerHTML = allTimeArr.map(row => {
+                return `<tr>
+                    <td><strong>${row.team}</strong></td>
+                    <td>${row.wins}</td>
+                    <td>${row.losses}</td>
+                    <td>${(row.winPct * 100).toFixed(1)}%</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('regular-standings-body').innerHTML = regArr.map(row => {
+                return `<tr>
+                    <td><strong>${row.team}</strong></td>
+                    <td>${row.wins}</td>
+                    <td>${row.losses}</td>
+                    <td>${(row.winPct * 100).toFixed(1)}%</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('playoff-standings-body').innerHTML = playArr.map(row => {
+                return `<tr>
+                    <td><strong>${row.team}</strong></td>
+                    <td>${row.wins}</td>
+                    <td>${row.losses}</td>
+                    <td>${(row.winPct * 100).toFixed(1)}%</td>
+                </tr>`;
+            }).join('');
+
+            const matchupsEditContainer = document.getElementById('matchups-edit-container');
+            if (editModes.matchups) {
+                matchupsEditContainer.classList.add('active');
+                renderMatchupsForm();
+            } else {
+                matchupsEditContainer.classList.remove('active');
+            }
+
+            document.getElementById('matchups-grid').innerHTML = realmData.matchups.map((row) => {
+                const hw = Number(row.houseW) || 0;
+                const ohw = Number(row.opposingHouseW) || 0;
+
+                const bowlHtml = row.bowlName && row.bowlName.trim() !== "" 
+                    ? `<div class="bowl-title">⚔️ ${row.bowlName} ⚔️</div>` 
+                    : '';
+
+                const houseName = row.house || 'Team 1';
+                const oppName = row.opposingHouse || 'Team 2';
+
+                return `
+                    <div class="duel-card">
+                        ${bowlHtml}
+                        <div class="duel-header">
+                            <span class="duel-house">${formatNameWithBanner(houseName)}</span>
+                            <span class="duel-vs">vs</span>
+                            <span class="duel-house" style="text-align:right; color:var(--text-main);">${formatNameWithBanner(oppName)}</span>
+                        </div>
+                        <div class="duel-stats">
+                            <div class="duel-stat-box">
+                                <label>${formatNameWithBanner(houseName)} Wins</label>
+                                <span class="highlight">${hw}</span>
+                            </div>
+                            <div class="duel-stat-box">
+                                <label>${formatNameWithBanner(oppName)} Wins</label>
+                                <span>${ohw}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('seasons-body').innerHTML = realmData.seasons.map((row) => {
+                const year = row.year;
+                const details = realmData.pastSeasonDetails[year];
+
+                let champText = "-";
+                let runnerUpText = "-";
+                let thirdText = "-";
+                let spoonText = "-";
+                let masterOfCoinText = "-";
+
+                if (details) {
+                    if (details.championship && (details.championship.winner === 1 || details.championship.winner === 2)) {
+                        const champTeam = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
+                        const runnerTeam = details.championship.winner === 2 ? details.championship.t1 : details.championship.t2;
+                        champText = champTeam;
+                        runnerUpText = runnerTeam;
+                    }
+                    if (details.thirdPlaceGame && (details.thirdPlaceGame.winner === 1 || details.thirdPlaceGame.winner === 2)) {
+                        const tpTeam = details.thirdPlaceGame.winner === 2 ? details.thirdPlaceGame.t2 : details.thirdPlaceGame.t1;
+                        thirdText = tpTeam;
+                    }
+                    if (details.standings && details.standings.length > 0) {
+                        const lastTeamObj = details.standings[details.standings.length - 1];
+                        if (lastTeamObj) {
+                            spoonText = lastTeamObj.team;
+                        }
+                    }
+                    masterOfCoinText = getMasterOfCoin(details);
+                }
+
+                return `<tr>
+                    <td><strong>${year}</strong></td>
+                    <td>🥇 ${formatNameWithBanner(champText)}</td>
+                    <td>🥈 ${formatNameWithBanner(runnerUpText)}</td>
+                    <td>🥉 ${formatNameWithBanner(thirdText)}</td>
+                    <td>🪙 ${masterOfCoinText}</td>
+                    <td style="color: var(--text-muted);">${formatNameWithBanner(spoonText)}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('champions-grid').innerHTML = realmData.seasons.map((row) => {
+                const year = row.year;
+                const details = realmData.pastSeasonDetails[year];
+                let houseOwner = "TBD";
+                let teamName = "";
+
+                if (details && details.championship && (details.championship.winner === 1 || details.championship.winner === 2)) {
+                    houseOwner = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
+                    
+                    if (details.standings) {
+                        const teamStanding = details.standings.find(st => st.team.toLowerCase() === houseOwner.toLowerCase());
+                        if (teamStanding) {
+                            teamName = teamStanding.owner || teamStanding.team.replace(/\([^)]*\)/g, '').trim();
+                        }
+                    }
+                }
+
+                return `
+                    <div class="champion-card">
+                        <div class="champion-year">${year} Champion</div>
+                        <div class="champion-name">${formatNameWithBanner(houseOwner)}</div>
+                        <div style="font-style:italic; font-size:0.9rem; color:var(--text-muted);">${formatNameWithBanner(teamName)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            const currentEditContainer = document.getElementById('current-edit-container');
+            if (editModes.currentSeason) {
+                currentEditContainer.classList.add('active');
+                renderCurrentSeasonForm();
+            } else {
+                currentEditContainer.classList.remove('active');
+            }
+
+            renderCurrentSeasonDisplay();
+            renderPastSeasonsDropdownAndPages();
+
+            const teamsBtn = document.getElementById('btn-teams');
+            if (teamsBtn) {
+                teamsBtn.textContent = editModes.teams ? "⚙️ Close Editor" : "⚙️ Edit Settings";
+            }
+
+            switchPage(activePageId);
+        }
+
+        function toggleEdit(page) {
+            if (page === 'teams') {
+                editModes.teams = !editModes.teams;
+                renderData();
+            } else if (page === 'matchups') {
+                editModes.matchups = !editModes.matchups;
+                renderData();
+            } else if (page === 'current-edit') {
+                editModes.currentSeason = !editModes.currentSeason;
+                renderData();
+            } else if (page.startsWith('past-season-')) {
+                let yr = page.replace('past-season-', '');
+                toggleEditPastSeason(yr);
+            }
+        }
+
+        window.onload = () => {
+            renderData();
+            switchPage('landing');
+        };
+    </script>
+</body>
+</html>
