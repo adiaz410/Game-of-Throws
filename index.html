@@ -1019,86 +1019,43 @@
             championship: { t1: "House Stark (Arya)", t2: "House Targaryen (Jon)", winner: 1 }
         };
 
-        let realmData = JSON.parse(localStorage.getItem('gameOfThrowsData')) || {};
+        // --- CLOUD CONFIGURATION (JSONBin.io) ---
+        const JSONBIN_BIN_ID = '6a62bfe5da38895dfe87a067';
+        const JSONBIN_MASTER_KEY = '$2a$10$eJm/CndBULanQFfD9mon2.oL.n2iT8rM9wRVGyBR7UXyMLdw9eodS';
 
-        if (!realmData.standings) {
-            realmData.standings = [
-                { team: "House Targaryen (Jon)", status: "active" },
-                { team: "House Stark (Arya)", status: "active" },
-                { team: "House Lannister (Tyrion)", status: "active" },
-                { team: "House Baratheon (Stannis)", status: "active" },
-                { team: "House Tyrell (Margaery)", status: "active" },
-                { team: "House Martell (Oberyn)", status: "active" },
-                { team: "House Greyjoy (Theon)", status: "active" },
-                { team: "House Bolton (Ramsay)", status: "active" },
-                { team: "House Mormont (Jorah)", status: "active" },
-                { team: "House Tully (Edmure)", status: "active" },
-                { team: "House Arryn (Robin)", status: "active" },
-                { team: "Night's Watch (Samwell)", status: "active" }
-            ];
-        } else {
-            realmData.standings = realmData.standings.map(s => ({ 
-                team: s.team || s.house || "", 
-                status: s.status || "active" 
-            }));
-        }
-
-        if (!realmData.currentSeason) {
-            realmData.currentSeason = {
-                year: "2026",
-                standings: realmData.standings.filter(s => s.status !== 'exiled to Essos').map(s => ({ team: s.team, owner: s.team, w: 0, l: 0, pts: 0 })),
-                quarterfinals: [
-                    { t1: "", t2: "", winner: 0 },
-                    { t1: "", t2: "", winner: 0 }
-                ],
-                semifinals: [
-                    { t1: "", t2: "", winner: 0 },
-                    { t1: "", t2: "", winner: 0 }
-                ],
-                thirdPlaceGame: { t1: "", t2: "", winner: 0 },
-                championship: { t1: "", t2: "", winner: 0 }
-            };
-        }
-
-        if (!realmData.matchups) {
-            realmData.matchups = [
-                { house: "House Targaryen (Jon)", opposingHouse: "House Stark", houseW: 58, opposingHouseW: 36, bowlName: "" },
-                { house: "House Stark (Arya)", opposingHouse: "House Targaryen", houseW: 54, opposingHouseW: 40, bowlName: "" },
-                { house: "House Lannister (Tyrion)", opposingHouse: "House Baratheon", houseW: 50, opposingHouseW: 44, bowlName: "" },
-                { house: "House Baratheon (Stannis)", opposingHouse: "House Lannister", houseW: 48, opposingHouseW: 46, bowlName: "" },
-                { house: "House Tyrell (Margaery)", opposingHouse: "House Martell", houseW: 47, opposingHouseW: 47, bowlName: "" },
-                { house: "House Martell (Oberyn)", opposingHouse: "House Tyrell", houseW: 46, opposingHouseW: 48, bowlName: "" },
-                { house: "House Greyjoy (Theon)", opposingHouse: "House Bolton", houseW: 45, opposingHouseW: 49, bowlName: "" },
-                { house: "House Bolton (Ramsay)", opposingHouse: "House Greyjoy", houseW: 44, opposingHouseW: 50, bowlName: "" },
-                { house: "House Mormont (Jorah)", opposingHouse: "Night's Watch", houseW: 43, opposingHouseW: 51, bowlName: "" },
-                { house: "House Tully (Edmure)", opposingHouse: "House Arryn", houseW: 41, opposingHouseW: 53, bowlName: "" },
-                { house: "House Arryn (Robin)", opposingHouse: "House Tully", houseW: 39, opposingHouseW: 55, bowlName: "" },
-                { house: "Night's Watch (Samwell)", opposingHouse: "House Mormont", houseW: 36, opposingHouseW: 58, bowlName: "" }
-            ];
-        }
-
-        if (!realmData.seasons || realmData.seasons.length === 0) {
-            realmData.seasons = [
-                { year: "2025" }, { year: "2024" }, { year: "2023" }, { year: "2022" }, { year: "2021" }, { year: "2020" }, { year: "2019" }
-            ];
-        }
-
-        if (!realmData.pastSeasonDetails) realmData.pastSeasonDetails = {};
-        realmData.seasons.forEach(s => {
-            if (!realmData.pastSeasonDetails[s.year]) {
-                realmData.pastSeasonDetails[s.year] = s.year === "2023" 
-                    ? JSON.parse(JSON.stringify(specific2023Template)) 
-                    : JSON.parse(JSON.stringify(standardSeasonTemplate));
-            } else {
-                let ps = realmData.pastSeasonDetails[s.year];
-                if (ps.standings) {
-                    ps.standings = ps.standings.map(st => ({ team: st.team, owner: st.owner, w: st.w || 0, l: st.l || 0, pts: st.pts || 1200 }));
-                    ps.standings.sort((a, b) => b.w - a.w || (b.pts || 0) - (a.pts || 0));
-                }
+        async function loadRealmData() {
+            try {
+                let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                });
+                let result = await response.json();
+                return result.record;
+            } catch (error) {
+                console.error("Failed to load from cloud, falling back to local storage.", error);
+                let fallback = JSON.parse(localStorage.getItem('gameOfThrowsData'));
+                return fallback || {};
             }
-        });
+        }
 
-        localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+        async function saveRealmData(data) {
+            localStorage.setItem('gameOfThrowsData', JSON.stringify(data));
+            try {
+                let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_MASTER_KEY
+                    },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) throw new Error('Cloud sync failed');
+            } catch (error) {
+                console.error("Error saving data to cloud:", error);
+                alert("Changes saved locally, but cloud sync failed. Check your network/API keys.");
+            }
+        }
+
+        let realmData = {};
 
         let editModes = {
             teams: false,
@@ -1131,14 +1088,14 @@
             const fileReader = new FileReader();
             if (event.target.files[0]) {
                 fileReader.readAsText(event.target.files[0], "UTF-8");
-                fileReader.onload = (e) => {
+                fileReader.onload = async (e) => {
                     try {
                         const parsedData = JSON.parse(e.target.result);
                         if (parsedData && parsedData.standings && parsedData.seasons) {
                             realmData = parsedData;
-                            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+                            await saveRealmData(realmData);
                             renderData();
-                            alert("Realm data successfully imported!");
+                            alert("Realm data successfully imported and synced to the cloud!");
                         } else {
                             alert("Invalid data format in JSON file.");
                         }
@@ -1202,19 +1159,19 @@
             }
         }
 
-        function deleteSeason(year) {
+        async function deleteSeason(year) {
             if (!confirm(`Are you sure you want to completely delete the ${year} season? This action cannot be undone.`)) return;
 
             realmData.seasons = realmData.seasons.filter(s => s.year !== year);
             delete realmData.pastSeasonDetails[year];
 
-            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+            await saveRealmData(realmData);
             renderData();
             switchPage('seasons');
             alert(`Season ${year} has been deleted.`);
         }
 
-        function concludeCurrentSeason() {
+        async function concludeCurrentSeason() {
             if (!confirm("Are you sure you want to conclude the current season, archive it into history, and reset for a new season?")) return;
             
             let cs = realmData.currentSeason;
@@ -1238,7 +1195,7 @@
                 championship: { t1: "", t2: "", winner: 0 }
             };
 
-            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+            await saveRealmData(realmData);
             renderData();
             alert(`Season ${yr} successfully concluded and archived into history! Current season updated to ${nextYr}.`);
             switchPage('current-season');
@@ -1268,11 +1225,13 @@
         }
 
         function sortDataNewestToOldest() {
-            realmData.seasons.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+            if (realmData.seasons) {
+                realmData.seasons.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+            }
         }
 
         function getAvailableTeams() {
-            return realmData.standings.map(s => s.team);
+            return realmData.standings ? realmData.standings.map(s => s.team) : [];
         }
 
         function sortStandingsArray(standingsArr) {
@@ -1287,80 +1246,84 @@
         function calculateTeamStats() {
             let stats = {};
 
-            realmData.standings.forEach(row => {
-                let name = row.team.trim();
-                if (name) {
-                    stats[name] = { 
-                        championships: 0, 
-                        seasonsPlayed: 0, 
-                        playoffApps: 0, 
-                        champApps: 0, 
-                        champSeasons: [],
-                        status: row.status || "active"
-                    };
-                }
-            });
-
-            realmData.seasons.forEach(season => {
-                const details = realmData.pastSeasonDetails[season.year];
-                if (!details || !details.standings) return;
-
-                details.standings.forEach((st) => {
-                    let tName = st.team.trim();
-                    if (!stats[tName]) {
-                        stats[tName] = { 
+            if (realmData.standings) {
+                realmData.standings.forEach(row => {
+                    let name = row.team.trim();
+                    if (name) {
+                        stats[name] = { 
                             championships: 0, 
                             seasonsPlayed: 0, 
                             playoffApps: 0, 
                             champApps: 0, 
                             champSeasons: [],
-                            status: "active"
+                            status: row.status || "active"
                         };
                     }
-                    stats[tName].seasonsPlayed += 1;
                 });
+            }
 
-                let playoffTeams = new Set();
-                if (details.byes) { details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim()); }); }
-                if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim()); if (q.t2) playoffTeams.add(q.t2.trim()); }); }
-                if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim()); if (sf.t2) playoffTeams.add(sf.t2.trim()); }); }
+            if (realmData.seasons) {
+                realmData.seasons.forEach(season => {
+                    const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[season.year] : null;
+                    if (!details || !details.standings) return;
 
-                playoffTeams.forEach(ptName => {
-                    let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === ptName.toLowerCase());
-                    if (!matchedKey) {
-                        stats[ptName] = { championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: [], status: "active" };
-                        matchedKey = ptName;
-                    }
-                    stats[matchedKey].playoffApps += 1;
-                });
-
-                if (details.championship) {
-                    const c1 = details.championship.t1 ? details.championship.t1.trim() : "";
-                    const c2 = details.championship.t2 ? details.championship.t2.trim() : "";
-                    const winnerNum = details.championship.winner;
-                    const champTeam = winnerNum === 2 ? c2 : c1;
-
-                    [c1, c2].forEach(cTeam => {
-                        if (!cTeam) return;
-                        let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === cTeam.toLowerCase());
-                        if (!matchedKey) {
-                            stats[cTeam] = { championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: [], status: "active" };
-                            matchedKey = cTeam;
+                    details.standings.forEach((st) => {
+                        let tName = st.team.trim();
+                        if (!stats[tName]) {
+                            stats[tName] = { 
+                                championships: 0, 
+                                seasonsPlayed: 0, 
+                                playoffApps: 0, 
+                                champApps: 0, 
+                                champSeasons: [],
+                                status: "active"
+                            };
                         }
-                        stats[matchedKey].champApps += 1;
+                        stats[tName].seasonsPlayed += 1;
                     });
 
-                    if (champTeam) {
-                        let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === champTeam.toLowerCase());
-                        if (matchedKey) {
-                            stats[matchedKey].championships += 1;
-                            if (!stats[matchedKey].champSeasons.includes(season.year)) {
-                                stats[matchedKey].champSeasons.push(season.year);
+                    let playoffTeams = new Set();
+                    if (details.byes) { details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim()); }); }
+                    if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim()); if (q.t2) playoffTeams.add(q.t2.trim()); }); }
+                    if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim()); if (sf.t2) playoffTeams.add(sf.t2.trim()); }); }
+
+                    playoffTeams.forEach(ptName => {
+                        let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === ptName.toLowerCase());
+                        if (!matchedKey) {
+                            stats[ptName] = { championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: [], status: "active" };
+                            matchedKey = ptName;
+                        }
+                        stats[matchedKey].playoffApps += 1;
+                    });
+
+                    if (details.championship) {
+                        const c1 = details.championship.t1 ? details.championship.t1.trim() : "";
+                        const c2 = details.championship.t2 ? details.championship.t2.trim() : "";
+                        const winnerNum = details.championship.winner;
+                        const champTeam = winnerNum === 2 ? c2 : c1;
+
+                        [c1, c2].forEach(cTeam => {
+                            if (!cTeam) return;
+                            let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === cTeam.toLowerCase());
+                            if (!matchedKey) {
+                                stats[cTeam] = { championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: [], status: "active" };
+                                matchedKey = cTeam;
+                            }
+                            stats[matchedKey].champApps += 1;
+                        });
+
+                        if (champTeam) {
+                            let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === champTeam.toLowerCase());
+                            if (matchedKey) {
+                                stats[matchedKey].championships += 1;
+                                if (!stats[matchedKey].champSeasons.includes(season.year)) {
+                                    stats[matchedKey].champSeasons.push(season.year);
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
+            }
 
             return Object.keys(stats).map(team => {
                 let data = stats[team];
@@ -1382,28 +1345,32 @@
 
         function calculateRegularSeasonStandings() {
             let stats = {};
-            realmData.standings.forEach(row => {
-                let name = row.team.trim();
-                if (name) {
-                    stats[name] = { wins: 0, losses: 0 };
-                }
-            });
-
-            realmData.seasons.forEach(season => {
-                const details = realmData.pastSeasonDetails[season.year];
-                if (!details || !details.standings) return;
-
-                details.standings.forEach(st => {
-                    let tName = st.team.trim();
-                    let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === tName.toLowerCase());
-                    if (!matchedKey) {
-                        stats[tName] = { wins: 0, losses: 0 };
-                        matchedKey = tName;
+            if (realmData.standings) {
+                realmData.standings.forEach(row => {
+                    let name = row.team.trim();
+                    if (name) {
+                        stats[name] = { wins: 0, losses: 0 };
                     }
-                    stats[matchedKey].wins += (st.w || 0);
-                    stats[matchedKey].losses += (st.l || 0);
                 });
-            });
+            }
+
+            if (realmData.seasons) {
+                realmData.seasons.forEach(season => {
+                    const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[season.year] : null;
+                    if (!details || !details.standings) return;
+
+                    details.standings.forEach(st => {
+                        let tName = st.team.trim();
+                        let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === tName.toLowerCase());
+                        if (!matchedKey) {
+                            stats[tName] = { wins: 0, losses: 0 };
+                            matchedKey = tName;
+                        }
+                        stats[matchedKey].wins += (st.w || 0);
+                        stats[matchedKey].losses += (st.l || 0);
+                    });
+                });
+            }
 
             if (realmData.currentSeason && realmData.currentSeason.standings) {
                 realmData.currentSeason.standings.forEach(st => {
@@ -1435,12 +1402,14 @@
 
         function calculatePlayoffStandings() {
             let stats = {};
-            realmData.standings.forEach(row => {
-                let name = row.team.trim();
-                if (name) {
-                    stats[name] = { wins: 0, losses: 0 };
-                }
-            });
+            if (realmData.standings) {
+                realmData.standings.forEach(row => {
+                    let name = row.team.trim();
+                    if (name) {
+                        stats[name] = { wins: 0, losses: 0 };
+                    }
+                });
+            }
 
             const processPlayoffs = (details) => {
                 if (!details) return;
@@ -1489,9 +1458,12 @@
                 }
             };
 
-            realmData.seasons.forEach(season => {
-                processPlayoffs(realmData.pastSeasonDetails[season.year]);
-            });
+            if (realmData.seasons) {
+                realmData.seasons.forEach(season => {
+                    const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[season.year] : null;
+                    processPlayoffs(details);
+                });
+            }
 
             if (realmData.currentSeason && areAllTeams14Games(realmData.currentSeason)) {
                 processPlayoffs(realmData.currentSeason);
@@ -1568,84 +1540,88 @@
         function calculateRankings() {
             let stats = {};
 
-            realmData.standings.forEach(row => {
-                let name = row.team.trim();
-                if (name) {
-                    stats[name] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
-                }
-            });
-
-            realmData.seasons.forEach(season => {
-                const details = realmData.pastSeasonDetails[season.year];
-                if (!details) return;
-
-                if (details.championship) {
-                    const champWinnerTeam = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
-                    let matchedC = Object.keys(stats).find(k => k.toLowerCase() === champWinnerTeam.toLowerCase()) || champWinnerTeam;
-                    if (matchedC) {
-                        if (!stats[matchedC]) stats[matchedC] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
-                        stats[matchedC].firsts += 1;
+            if (realmData.standings) {
+                realmData.standings.forEach(row => {
+                    let name = row.team.trim();
+                    if (name) {
+                        stats[name] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
                     }
+                });
+            }
 
-                    const champLoserTeam = details.championship.winner === 2 ? details.championship.t1 : details.championship.t2;
-                    let matchedR = Object.keys(stats).find(k => k.toLowerCase() === champLoserTeam.toLowerCase()) || champLoserTeam;
-                    if (matchedR) {
-                        if (!stats[matchedR]) stats[matchedR] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
-                        stats[matchedR].seconds += 1;
-                    }
-                }
+            if (realmData.seasons) {
+                realmData.seasons.forEach(season => {
+                    const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[season.year] : null;
+                    if (!details) return;
 
-                if (details.thirdPlaceGame) {
-                    const tpWinnerTeam = details.thirdPlaceGame.winner === 2 ? details.thirdPlaceGame.t2 : details.thirdPlaceGame.t1;
-                    let matchedTP = Object.keys(stats).find(k => k.toLowerCase() === tpWinnerTeam.toLowerCase()) || tpWinnerTeam;
-                    if (matchedTP) {
-                        if (!stats[matchedTP]) stats[matchedTP] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
-                        stats[matchedTP].thirds += 1;
-                    }
-                }
+                    if (details.championship) {
+                        const champWinnerTeam = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
+                        let matchedC = Object.keys(stats).find(k => k.toLowerCase() === champWinnerTeam.toLowerCase()) || champWinnerTeam;
+                        if (matchedC) {
+                            if (!stats[matchedC]) stats[matchedC] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
+                            stats[matchedC].firsts += 1;
+                        }
 
-                if (details.standings && details.standings.length > 0) {
-                    const lastTeamObj = details.standings[details.standings.length - 1];
-                    if (lastTeamObj) {
-                        let matchedS = Object.keys(stats).find(k => k.toLowerCase() === lastTeamObj.team.toLowerCase()) || lastTeamObj.team;
-                        if (matchedS) {
-                            if (!stats[matchedS]) stats[matchedS] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
-                            stats[matchedS].lasts += 1;
+                        const champLoserTeam = details.championship.winner === 2 ? details.championship.t1 : details.championship.t2;
+                        let matchedR = Object.keys(stats).find(k => k.toLowerCase() === champLoserTeam.toLowerCase()) || champLoserTeam;
+                        if (matchedR) {
+                            if (!stats[matchedR]) stats[matchedR] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
+                            stats[matchedR].seconds += 1;
                         }
                     }
 
-                    let bestW = details.standings[0].w;
-                    let topTeamObj = details.standings.find(st => st.w === bestW);
-                    if (topTeamObj) {
-                        let matchedBR = Object.keys(stats).find(k => k.toLowerCase() === topTeamObj.team.toLowerCase());
-                        if (matchedBR) stats[matchedBR].bestRecordReg += 1;
+                    if (details.thirdPlaceGame) {
+                        const tpWinnerTeam = details.thirdPlaceGame.winner === 2 ? details.thirdPlaceGame.t2 : details.thirdPlaceGame.t1;
+                        let matchedTP = Object.keys(stats).find(k => k.toLowerCase() === tpWinnerTeam.toLowerCase()) || tpWinnerTeam;
+                        if (matchedTP) {
+                            if (!stats[matchedTP]) stats[matchedTP] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
+                            stats[matchedTP].thirds += 1;
+                        }
                     }
 
-                    let maxPts = -1;
-                    details.standings.forEach(st => {
-                        let pts = st.pts || 0;
-                        if (pts > maxPts) maxPts = pts;
-                    });
-                    if (maxPts > 0) {
-                        details.standings.filter(st => (st.pts || 0) === maxPts).forEach(st => {
-                            let matchedMP = Object.keys(stats).find(k => k.toLowerCase() === st.team.toLowerCase());
-                            if (matchedMP) stats[matchedMP].mostPtsReg += 1;
+                    if (details.standings && details.standings.length > 0) {
+                        const lastTeamObj = details.standings[details.standings.length - 1];
+                        if (lastTeamObj) {
+                            let matchedS = Object.keys(stats).find(k => k.toLowerCase() === lastTeamObj.team.toLowerCase()) || lastTeamObj.team;
+                            if (matchedS) {
+                                if (!stats[matchedS]) stats[matchedS] = { firsts: 0, seconds: 0, thirds: 0, lasts: 0, playoffApps: 0, bestRecordReg: 0, mostPtsReg: 0 };
+                                stats[matchedS].lasts += 1;
+                            }
+                        }
+
+                        let bestW = details.standings[0].w;
+                        let topTeamObj = details.standings.find(st => st.w === bestW);
+                        if (topTeamObj) {
+                            let matchedBR = Object.keys(stats).find(k => k.toLowerCase() === topTeamObj.team.toLowerCase());
+                            if (matchedBR) stats[matchedBR].bestRecordReg += 1;
+                        }
+
+                        let maxPts = -1;
+                        details.standings.forEach(st => {
+                            let pts = st.pts || 0;
+                            if (pts > maxPts) maxPts = pts;
                         });
+                        if (maxPts > 0) {
+                            details.standings.filter(st => (st.pts || 0) === maxPts).forEach(st => {
+                                let matchedMP = Object.keys(stats).find(k => k.toLowerCase() === st.team.toLowerCase());
+                                if (matchedMP) stats[matchedMP].mostPtsReg += 1;
+                            });
+                        }
                     }
-                }
 
-                let playoffTeams = new Set();
-                if (details.byes) { details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim()); }); }
-                if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim()); if (q.t2) playoffTeams.add(q.t2.trim()); }); }
-                if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim()); if (sf.t2) playoffTeams.add(sf.t2.trim()); }); }
+                    let playoffTeams = new Set();
+                    if (details.byes) { details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim()); }); }
+                    if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim()); if (q.t2) playoffTeams.add(q.t2.trim()); }); }
+                    if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim()); if (sf.t2) playoffTeams.add(sf.t2.trim()); }); }
 
-                playoffTeams.forEach(ptName => {
-                    let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === ptName.toLowerCase());
-                    if (matchedKey) {
-                        stats[matchedKey].playoffApps += 1;
-                    }
+                    playoffTeams.forEach(ptName => {
+                        let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === ptName.toLowerCase());
+                        if (matchedKey) {
+                            stats[matchedKey].playoffApps += 1;
+                        }
+                    });
                 });
-            });
+            }
 
             let arr = Object.keys(stats).map(team => {
                 let data = stats[team];
@@ -1697,99 +1673,103 @@
             };
 
             let teamStats = {};
-            realmData.standings.forEach(row => {
-                let name = row.team.trim();
-                if (name) {
-                    teamStats[name] = { firsts: 0, seconds: 0, champApps: 0, playoffApps: 0, lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0 };
-                }
-            });
+            if (realmData.standings) {
+                realmData.standings.forEach(row => {
+                    let name = row.team.trim();
+                    if (name) {
+                        teamStats[name] = { firsts: 0, seconds: 0, champApps: 0, playoffApps: 0, lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0 };
+                    }
+                });
+            }
 
             // Gather across all past seasons
-            realmData.seasons.forEach(season => {
-                const details = realmData.pastSeasonDetails[season.year];
-                if (!details) return;
+            if (realmData.seasons) {
+                realmData.seasons.forEach(season => {
+                    const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[season.year] : null;
+                    if (!details) return;
 
-                // Standings & Points
-                if (details.standings && details.standings.length > 0) {
-                    details.standings.forEach((st, idx) => {
-                        let tName = st.team.trim();
-                        let pts = st.pts || 0;
+                    // Standings & Points
+                    if (details.standings && details.standings.length > 0) {
+                        details.standings.forEach((st, idx) => {
+                            let tName = st.team.trim();
+                            let pts = st.pts || 0;
 
-                        if (!teamStats[tName]) {
-                            teamStats[tName] = { firsts: 0, seconds: 0, champApps: 0, playoffApps: 0, lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0 };
-                        }
+                            if (!teamStats[tName]) {
+                                teamStats[tName] = { firsts: 0, seconds: 0, champApps: 0, playoffApps: 0, lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0 };
+                            }
 
-                        // Reg wins/losses
-                        teamStats[tName].regWins += (st.w || 0);
-                        teamStats[tName].regLosses += (st.l || 0);
+                            // Reg wins/losses
+                            teamStats[tName].regWins += (st.w || 0);
+                            teamStats[tName].regLosses += (st.l || 0);
 
-                        // Points in a season
-                        let pKey = "Most Points in a Season";
-                        if (pts > records[pKey].val) {
-                            records[pKey].val = pts;
-                            records[pKey].teams = [tName + ` (${season.year})`];
-                        } else if (pts === records[pKey].val) {
-                            records[pKey].teams.push(tName + ` (${season.year})`);
-                        }
+                            // Points in a season
+                            let pKey = "Most Points in a Season";
+                            if (pts > records[pKey].val) {
+                                records[pKey].val = pts;
+                                records[pKey].teams = [tName + ` (${season.year})`];
+                            } else if (pts === records[pKey].val) {
+                                records[pKey].teams.push(tName + ` (${season.year})`);
+                            }
 
-                        let lKey = "Least Points in a Season";
-                        if (pts < records[lKey].val) {
-                            records[lKey].val = pts;
-                            records[lKey].teams = [tName + ` (${season.year})`];
-                        } else if (pts === records[lKey].val) {
-                            records[lKey].teams.push(tName + ` (${season.year})`);
-                        }
+                            let lKey = "Least Points in a Season";
+                            if (pts < records[lKey].val) {
+                                records[lKey].val = pts;
+                                records[lKey].teams = [tName + ` (${season.year})`];
+                            } else if (pts === records[lKey].val) {
+                                records[lKey].teams.push(tName + ` (${season.year})`);
+                            }
 
-                        // Last finishes
-                        if (idx === details.standings.length - 1) {
-                            teamStats[tName].lasts += 1;
-                        }
-                    });
-                }
-
-                // Championship & 2nds
-                if (details.championship) {
-                    let c1 = details.championship.t1 ? details.championship.t1.trim() : "";
-                    let c2 = details.championship.t2 ? details.championship.t2.trim() : "";
-                    let winnerNum = details.championship.winner;
-
-                    if (winnerNum === 1 || winnerNum === 2) {
-                        let champ = winnerNum === 2 ? c2 : c1;
-                        let runner = winnerNum === 2 ? c1 : c2;
-
-                        if (champ && teamStats[champ]) teamStats[champ].firsts += 1;
-                        if (runner && teamStats[runner]) teamStats[runner].seconds += 1;
+                            // Last finishes
+                            if (idx === details.standings.length - 1) {
+                                teamStats[tName].lasts += 1;
+                            }
+                        });
                     }
 
-                    [c1, c2].forEach(cTeam => {
-                        if (cTeam && teamStats[cTeam]) teamStats[cTeam].champApps += 1;
+                    // Championship & 2nds
+                    if (details.championship) {
+                        let c1 = details.championship.t1 ? details.championship.t1.trim() : "";
+                        let c2 = details.championship.t2 ? details.championship.t2.trim() : "";
+                        let winnerNum = details.championship.winner;
+
+                        if (winnerNum === 1 || winnerNum === 2) {
+                            let champ = winnerNum === 2 ? c2 : c1;
+                            let runner = winnerNum === 2 ? c1 : c2;
+
+                            if (champ && teamStats[champ]) teamStats[champ].firsts += 1;
+                            if (runner && teamStats[runner]) teamStats[runner].seconds += 1;
+                        }
+
+                        [c1, c2].forEach(cTeam => {
+                            if (cTeam && teamStats[cTeam]) teamStats[cTeam].champApps += 1;
+                        });
+                    }
+
+                    // Playoff apps & wins/losses
+                    let playoffTeams = new Set();
+                    if (details.byes) { details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim()); }); }
+                    if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim()); if (q.t2) playoffTeams.add(q.t2.trim()); }); }
+                    if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim()); if (sf.t2) playoffTeams.add(sf.t2.trim()); }); }
+
+                    playoffTeams.forEach(ptName => {
+                        if (teamStats[ptName]) teamStats[ptName].playoffApps += 1;
                     });
-                }
 
-                // Playoff apps & wins/losses
-                let playoffTeams = new Set();
-                if (details.byes) { details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim()); }); }
-                if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim()); if (q.t2) playoffTeams.add(q.t2.trim()); }); }
-                if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim()); if (sf.t2) playoffTeams.add(sf.t2.trim()); }); }
+                    // Playoff match wins/losses helper
+                    const processPlayoffGame = (game) => {
+                        if (!game || (game.winner !== 1 && game.winner !== 2)) return;
+                        let wTeam = game.winner === 2 ? game.t2 : game.t1;
+                        let lTeam = game.winner === 2 ? game.t1 : game.t2;
+                        if (wTeam && teamStats[wTeam]) teamStats[wTeam].playWins += 1;
+                        if (lTeam && teamStats[lTeam]) teamStats[lTeam].playLosses += 1;
+                    };
 
-                playoffTeams.forEach(ptName => {
-                    if (teamStats[ptName]) teamStats[ptName].playoffApps += 1;
+                    if (details.quarterfinals) details.quarterfinals.forEach(processPlayoffGame);
+                    if (details.semifinals) details.semifinals.forEach(processPlayoffGame);
+                    if (details.thirdPlaceGame) processPlayoffGame(details.thirdPlaceGame);
+                    if (details.championship) processPlayoffGame(details.championship);
                 });
-
-                // Playoff match wins/losses helper
-                const processPlayoffGame = (game) => {
-                    if (!game || (game.winner !== 1 && game.winner !== 2)) return;
-                    let wTeam = game.winner === 2 ? game.t2 : game.t1;
-                    let lTeam = game.winner === 2 ? game.t1 : game.t2;
-                    if (wTeam && teamStats[wTeam]) teamStats[wTeam].playWins += 1;
-                    if (lTeam && teamStats[lTeam]) teamStats[lTeam].playLosses += 1;
-                };
-
-                if (details.quarterfinals) details.quarterfinals.forEach(processPlayoffGame);
-                if (details.semifinals) details.semifinals.forEach(processPlayoffGame);
-                if (details.thirdPlaceGame) processPlayoffGame(details.thirdPlaceGame);
-                if (details.championship) processPlayoffGame(details.championship);
-            });
+            }
 
             // Map team stats to accolade records
             Object.keys(teamStats).forEach(tName => {
@@ -1865,33 +1845,40 @@
             tbody.innerHTML = html;
         }
 
-        function addSeason() {
+        async function addSeason() {
             sortDataNewestToOldest();
-            const newestYear = realmData.seasons.length > 0 ? (parseInt(realmData.seasons[0].year) + 1).toString() : "2026";
+            const newestYear = realmData.seasons && realmData.seasons.length > 0 ? (parseInt(realmData.seasons[0].year) + 1).toString() : "2026";
             
+            if (!realmData.seasons) realmData.seasons = [];
             realmData.seasons.unshift({ year: newestYear });
 
+            if (!realmData.pastSeasonDetails) realmData.pastSeasonDetails = {};
             if (!realmData.pastSeasonDetails[newestYear]) {
                 realmData.pastSeasonDetails[newestYear] = JSON.parse(JSON.stringify(standardSeasonTemplate));
             }
 
+            await saveRealmData(realmData);
             renderData();
             switchPage(`past-season-${newestYear}`);
             toggleEditPastSeason(newestYear);
         }
 
-        function addTeamRow() {
+        async function addTeamRow() {
+            if (!realmData.standings) realmData.standings = [];
             realmData.standings.push({ team: "", status: "active" });
+            await saveRealmData(realmData);
             renderTeamsForm();
         }
 
-        function removeTeamRow(index) {
+        async function removeTeamRow(index) {
             realmData.standings.splice(index, 1);
+            await saveRealmData(realmData);
             renderTeamsForm();
         }
 
         function renderTeamsForm() {
             const container = document.getElementById('teams-form-rows');
+            if (!container || !realmData.standings) return;
             container.innerHTML = realmData.standings.map((row, index) => {
                 const currentStatus = row.status || "active";
                 return `
@@ -1915,7 +1902,7 @@
             }).join('');
         }
 
-        function saveTeamsForm() {
+        async function saveTeamsForm() {
             const rows = document.querySelectorAll('#teams-form-rows .edit-row');
             rows.forEach((r, index) => {
                 const teamInput = r.querySelector('[data-t-field="team"]');
@@ -1926,24 +1913,28 @@
                 }
             });
 
-            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+            await saveRealmData(realmData);
             editModes.teams = false;
             renderData();
         }
 
-        function addMatchupRow() {
+        async function addMatchupRow() {
+            if (!realmData.matchups) realmData.matchups = [];
             realmData.matchups.push({ house: "", opposingHouse: "", houseW: "", opposingHouseW: "", bowlName: "" });
+            await saveRealmData(realmData);
             renderMatchupsForm();
         }
 
-        function removeMatchupRow(index) {
+        async function removeMatchupRow(index) {
             realmData.matchups.splice(index, 1);
+            await saveRealmData(realmData);
             renderMatchupsForm();
         }
 
         function renderMatchupsForm() {
             const teams = getAvailableTeams();
             const container = document.getElementById('matchups-form-rows');
+            if (!container || !realmData.matchups) return;
             
             container.innerHTML = realmData.matchups.map((row, index) => {
                 const houseOptions = teams.map(t => `<option value="${t}" ${row.house === t ? 'selected' : ''}>${t}</option>`).join('');
@@ -2008,6 +1999,7 @@
         function renderCurrentSeasonForm() {
             let cs = realmData.currentSeason;
             let container = document.getElementById('current-form-content');
+            if (!container || !cs) return;
 
             let standingsHtml = cs.standings.map((st, idx) => {
                 let teamNameVal = st.owner || st.team.replace(/\([^)]*\)/g, '').trim();
@@ -2109,13 +2101,14 @@
             `;
         }
 
-        function addCurrentSeasonTeamRow() {
+        async function addCurrentSeasonTeamRow() {
             if (!realmData.currentSeason.standings) realmData.currentSeason.standings = [];
             realmData.currentSeason.standings.push({ team: "", owner: "", w: 0, l: 0, pts: 0 });
+            await saveRealmData(realmData);
             renderCurrentSeasonForm();
         }
 
-        function saveCurrentSeasonForm() {
+        async function saveCurrentSeasonForm() {
             let cs = realmData.currentSeason;
             cs.year = document.getElementById('cs-year-input').value.trim() || "2026";
 
@@ -2159,12 +2152,12 @@
             }
 
             syncBracketData(cs);
-            localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+            await saveRealmData(realmData);
             editModes.currentSeason = false;
             renderData();
         }
 
-        function toggleEditPastSeason(year) {
+        async function toggleEditPastSeason(year) {
             if (editModes.pastSeason === year) {
                 const section = document.getElementById(`past-season-${year}`);
                 if (section) {
@@ -2208,7 +2201,7 @@
                     }
 
                     syncBracketData(details);
-                    localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+                    await saveRealmData(realmData);
                 }
                 editModes.pastSeason = null;
             } else {
@@ -2321,13 +2314,14 @@
         function renderPastSeasonsDropdownAndPages() {
             const dropdownContainer = document.getElementById('past-seasons-dropdown');
             const pagesContainer = document.getElementById('past-seasons-pages-container');
+            if (!dropdownContainer || !pagesContainer) return;
 
             if (!realmData.pastSeasonDetails) realmData.pastSeasonDetails = {};
 
             let dropdownHtml = '';
             let pagesHtml = '';
 
-            const years = realmData.seasons.map(s => s.year).sort((a, b) => parseInt(b) - parseInt(a));
+            const years = realmData.seasons ? realmData.seasons.map(s => s.year).sort((a, b) => parseInt(b) - parseInt(a)) : [];
             const availableTeams = getAvailableTeams();
 
             years.forEach(year => {
@@ -2778,104 +2772,108 @@
                 matchupsEditContainer.classList.remove('active');
             }
 
-            document.getElementById('matchups-grid').innerHTML = realmData.matchups.map((row) => {
-                const hw = Number(row.houseW) || 0;
-                const ohw = Number(row.opposingHouseW) || 0;
+            if (realmData.matchups) {
+                document.getElementById('matchups-grid').innerHTML = realmData.matchups.map((row) => {
+                    const hw = Number(row.houseW) || 0;
+                    const ohw = Number(row.opposingHouseW) || 0;
 
-                const bowlHtml = row.bowlName && row.bowlName.trim() !== "" 
-                    ? `<div class="bowl-title">⚔️ ${row.bowlName} ⚔️</div>` 
-                    : '';
+                    const bowlHtml = row.bowlName && row.bowlName.trim() !== "" 
+                        ? `<div class="bowl-title">⚔️ ${row.bowlName} ⚔️</div>` 
+                        : '';
 
-                const houseName = row.house || 'Team 1';
-                const oppName = row.opposingHouse || 'Team 2';
+                    const houseName = row.house || 'Team 1';
+                    const oppName = row.opposingHouse || 'Team 2';
 
-                return `
-                    <div class="duel-card">
-                        ${bowlHtml}
-                        <div class="duel-header">
-                            <span class="duel-house">${formatNameWithBanner(houseName)}</span>
-                            <span class="duel-vs">vs</span>
-                            <span class="duel-house" style="text-align:right; color:var(--text-main);">${formatNameWithBanner(oppName)}</span>
-                        </div>
-                        <div class="duel-stats">
-                            <div class="duel-stat-box">
-                                <label>${formatNameWithBanner(houseName)} Wins</label>
-                                <span class="highlight">${hw}</span>
+                    return `
+                        <div class="duel-card">
+                            ${bowlHtml}
+                            <div class="duel-header">
+                                <span class="duel-house">${formatNameWithBanner(houseName)}</span>
+                                <span class="duel-vs">vs</span>
+                                <span class="duel-house" style="text-align:right; color:var(--text-main);">${formatNameWithBanner(oppName)}</span>
                             </div>
-                            <div class="duel-stat-box">
-                                <label>${formatNameWithBanner(oppName)} Wins</label>
-                                <span>${ohw}</span>
+                            <div class="duel-stats">
+                                <div class="duel-stat-box">
+                                    <label>${formatNameWithBanner(houseName)} Wins</label>
+                                    <span class="highlight">${hw}</span>
+                                </div>
+                                <div class="duel-stat-box">
+                                    <label>${formatNameWithBanner(oppName)} Wins</label>
+                                    <span>${ohw}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            }
 
-            document.getElementById('seasons-body').innerHTML = realmData.seasons.map((row) => {
-                const year = row.year;
-                const details = realmData.pastSeasonDetails[year];
+            if (realmData.seasons) {
+                document.getElementById('seasons-body').innerHTML = realmData.seasons.map((row) => {
+                    const year = row.year;
+                    const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[year] : null;
 
-                let champText = "-";
-                let runnerUpText = "-";
-                let thirdText = "-";
-                let spoonText = "-";
-                let masterOfCoinText = "-";
+                    let champText = "-";
+                    let runnerUpText = "-";
+                    let thirdText = "-";
+                    let spoonText = "-";
+                    let masterOfCoinText = "-";
 
-                if (details) {
-                    if (details.championship && (details.championship.winner === 1 || details.championship.winner === 2)) {
-                        const champTeam = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
-                        const runnerTeam = details.championship.winner === 2 ? details.championship.t1 : details.championship.t2;
-                        champText = champTeam;
-                        runnerUpText = runnerTeam;
+                    if (details) {
+                        if (details.championship && (details.championship.winner === 1 || details.championship.winner === 2)) {
+                            const champTeam = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
+                            const runnerTeam = details.championship.winner === 2 ? details.championship.t1 : details.championship.t2;
+                            champText = champTeam;
+                            runnerUpText = runnerTeam;
+                        }
+                        if (details.thirdPlaceGame && (details.thirdPlaceGame.winner === 1 || details.thirdPlaceGame.winner === 2)) {
+                            const tpTeam = details.thirdPlaceGame.winner === 2 ? details.thirdPlaceGame.t2 : details.thirdPlaceGame.t1;
+                            thirdText = tpTeam;
+                        }
+                        if (details.standings && details.standings.length > 0) {
+                            const lastTeamObj = details.standings[details.standings.length - 1];
+                            if (lastTeamObj) {
+                                spoonText = lastTeamObj.team;
+                            }
+                        }
+                        masterOfCoinText = getMasterOfCoin(details);
                     }
-                    if (details.thirdPlaceGame && (details.thirdPlaceGame.winner === 1 || details.thirdPlaceGame.winner === 2)) {
-                        const tpTeam = details.thirdPlaceGame.winner === 2 ? details.thirdPlaceGame.t2 : details.thirdPlaceGame.t1;
-                        thirdText = tpTeam;
-                    }
-                    if (details.standings && details.standings.length > 0) {
-                        const lastTeamObj = details.standings[details.standings.length - 1];
-                        if (lastTeamObj) {
-                            spoonText = lastTeamObj.team;
+
+                    return `<tr>
+                        <td><strong>${year}</strong></td>
+                        <td>🥇 ${formatNameWithBanner(champText)}</td>
+                        <td>🥈 ${formatNameWithBanner(runnerUpText)}</td>
+                        <td>🥉 ${formatNameWithBanner(thirdText)}</td>
+                        <td>🪙 ${masterOfCoinText}</td>
+                        <td style="color: var(--text-muted);">${formatNameWithBanner(spoonText)}</td>
+                    </tr>`;
+                }).join('');
+
+                document.getElementById('champions-grid').innerHTML = realmData.seasons.map((row) => {
+                    const year = row.year;
+                    const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[year] : null;
+                    let houseOwner = "TBD";
+                    let teamName = "";
+
+                    if (details && details.championship && (details.championship.winner === 1 || details.championship.winner === 2)) {
+                        houseOwner = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
+                        
+                        if (details.standings) {
+                            const teamStanding = details.standings.find(st => st.team.toLowerCase() === houseOwner.toLowerCase());
+                            if (teamStanding) {
+                                teamName = teamStanding.owner || teamStanding.team.replace(/\([^)]*\)/g, '').trim();
+                            }
                         }
                     }
-                    masterOfCoinText = getMasterOfCoin(details);
-                }
 
-                return `<tr>
-                    <td><strong>${year}</strong></td>
-                    <td>🥇 ${formatNameWithBanner(champText)}</td>
-                    <td>🥈 ${formatNameWithBanner(runnerUpText)}</td>
-                    <td>🥉 ${formatNameWithBanner(thirdText)}</td>
-                    <td>🪙 ${masterOfCoinText}</td>
-                    <td style="color: var(--text-muted);">${formatNameWithBanner(spoonText)}</td>
-                </tr>`;
-            }).join('');
-
-            document.getElementById('champions-grid').innerHTML = realmData.seasons.map((row) => {
-                const year = row.year;
-                const details = realmData.pastSeasonDetails[year];
-                let houseOwner = "TBD";
-                let teamName = "";
-
-                if (details && details.championship && (details.championship.winner === 1 || details.championship.winner === 2)) {
-                    houseOwner = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
-                    
-                    if (details.standings) {
-                        const teamStanding = details.standings.find(st => st.team.toLowerCase() === houseOwner.toLowerCase());
-                        if (teamStanding) {
-                            teamName = teamStanding.owner || teamStanding.team.replace(/\([^)]*\)/g, '').trim();
-                        }
-                    }
-                }
-
-                return `
-                    <div class="champion-card">
-                        <div class="champion-year">${year} Champion</div>
-                        <div class="champion-name">${formatNameWithBanner(houseOwner)}</div>
-                        <div style="font-style:italic; font-size:0.9rem; color:var(--text-muted);">${formatNameWithBanner(teamName)}</div>
-                    </div>
-                `;
-            }).join('');
+                    return `
+                        <div class="champion-card">
+                            <div class="champion-year">${year} Champion</div>
+                            <div class="champion-name">${formatNameWithBanner(houseOwner)}</div>
+                            <div style="font-style:italic; font-size:0.9rem; color:var(--text-muted);">${formatNameWithBanner(teamName)}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
 
             const currentEditContainer = document.getElementById('current-edit-container');
             if (editModes.currentSeason) {
@@ -2912,7 +2910,8 @@
             }
         }
 
-        window.onload = () => {
+        window.onload = async () => {
+            realmData = await loadRealmData();
             renderData();
             switchPage('landing');
         };
