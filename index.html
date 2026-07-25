@@ -727,11 +727,11 @@
             </div>
 
             <!-- Compact House Filter Control (Visible in Cards View) -->
-            <div id="matchup-filter-container" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-start;">
-                <select id="matchup-house-filter" onchange="filterMatchups()" style="width: auto; min-width: 140px; padding: 0.35rem 0.6rem; background: #0c0d10; border: 1px solid var(--border-gold); color: var(--text-main); font-family: 'Lora', serif; font-size: 0.85rem;">
-                    <option value="">All Houses</option>
-                </select>
-            </div>
+<div id="matchup-filter-container" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-start;">
+    <select id="matchup-house-filter" onchange="filterMatchups()" style="width: auto; min-width: 140px; padding: 0.35rem 0.6rem; background: #0c0d10; border: 1px solid var(--border-gold); color: var(--text-main); font-family: 'Lora', serif; font-size: 0.85rem;">
+        <option value="">All Houses</option>
+    </select>
+</div>
 
             <div class="matchups-grid" id="matchups-grid"></div>
             <div class="table-container" id="matchups-matrix-container" style="display:none;"></div>
@@ -1901,7 +1901,26 @@
             const matrixContainer = document.getElementById('matchups-matrix-container');
             const filterContainer = document.getElementById('matchup-filter-container');
             const availableTeams = getAvailableTeams();
+// Populate the house filter dropdown dynamically
+            const filterSelect = document.getElementById('matchup-house-filter');
+            if (filterSelect) {
+                const currentVal = filterSelect.value;
+                let houses = new Set();
+                
+                // Pulls teams from your overall league standings/houses list
+                availableTeams.forEach(t => houses.add(t.trim()));
+                
+                // (Optional alternative) If you only want teams that have specific matchup cards:
+                // realmData.matchups.forEach(m => {
+                //     if (m.house) houses.add(m.house.trim());
+                //     if (m.opposingHouse) houses.add(m.opposingHouse.trim());
+                // });
 
+                let sortedHouses = Array.from(houses).sort();
+                filterSelect.innerHTML = '<option value="">All Houses</option>' + sortedHouses.map(h => `
+                    <option value="${h}" ${currentVal === h ? 'selected' : ''}>${h}</option>
+                `).join('');
+            }
             const isEditing = editModes.matchups;
             document.getElementById('btn-add-matchup').style.display = isEditing ? 'inline-block' : 'none';
             document.getElementById('btn-save-matchups').style.display = isEditing ? 'inline-block' : 'none';
