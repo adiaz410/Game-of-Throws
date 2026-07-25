@@ -1626,8 +1626,10 @@
 
         function calculateAccolades() {
             let records = {
+                // CAREER ACCOLADES
                 "Iron Throne: Most championships": { val: -1, teams: [] },
                 "Running Up: Most 2nds": { val: -1, teams: [] },
+                "3rd place finishes": { val: -1, teams: [] },
                 "Most championship appearances": { val: -1, teams: [] },
                 "Most playoff appearances": { val: -1, teams: [] },
                 "Reek: last finishes": { val: -1, teams: [] },
@@ -1635,10 +1637,34 @@
                 "Most Reg Season losses": { val: -1, teams: [] },
                 "Most Playoff Wins": { val: -1, teams: [] },
                 "Most Playoff losses": { val: -1, teams: [] },
+                "Most seasons above .500": { val: -1, teams: [] },
+                "Most seasons below .500": { val: -1, teams: [] },
+                "Most first round byes earned": { val: -1, teams: [] },
+                "Most seasons with best record": { val: -1, teams: [] },
+                "Most seasons with most points": { val: -1, teams: [] },
+                "Most top 3 scoring seasons": { val: -1, teams: [] },
+                "Most bottom 3 scoring seasons": { val: -1, teams: [] },
+                "Most seasons missing playoffs": { val: -1, teams: [] },
+                "Consecutive winning seasons": { val: -1, teams: [] },
+                "Consecutive losing seasons": { val: -1, teams: [] },
+                "Consecutive playoff appearances": { val: -1, teams: [] },
+                "Consecutive championship appearances": { val: -1, teams: [] },
+                "Longest playoff drought": { val: -1, teams: [] },
+                "Highest average career points": { val: -1, teams: [] },
+                "Lowest average career points": { val: Infinity, teams: [] },
+
+                // SINGLE SEASON ACCOLADES (Values contain (YYYY) to auto-sort into Single Season table)
                 "Most Points in a Season": { val: -1, teams: [] },
                 "Least Points in a Season": { val: Infinity, teams: [] },
+                "Best single season record": { val: -1, teams: [] },
+                "Worst single season record": { val: Infinity, teams: [] },
+                "Luckiest: Lowest Points Against": { val: Infinity, teams: [] },
+                "Highest differential": { val: -Infinity, teams: [] },
                 "Just Got In: Lowest Differential with Playoff App.": { val: Infinity, teams: [] },
-                "Just Knocked Out: Highest Differential without Playoff App.": { val: -Infinity, teams: [] }
+                "Just Knocked Out: Highest Differential without Playoff App.": { val: -Infinity, teams: [] },
+                "Most improved season": { val: -Infinity, teams: [] },
+                "Biggest Overachiever": { val: -Infinity, teams: [] },
+                "Biggest Underachiever": { val: Infinity, teams: [] }
             };
 
             let teamStats = {};
@@ -1646,11 +1672,21 @@
                 realmData.standings.forEach(row => {
                     let name = row.team.trim();
                     if (name) {
-                        teamStats[name] = { firsts: 0, seconds: 0, champApps: 0, playoffApps: 0, lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0 };
+                        teamStats[name] = { 
+                            firsts: 0, seconds: 0, thirds: 0, champApps: 0, playoffApps: 0, 
+                            lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0,
+                            above500: 0, below500: 0, byes: 0, bestRecords: 0, mostPtsSeasons: 0,
+                            top3Pts: 0, bottom3Pts: 0, missedPlayoffs: 0,
+                            totalPts: 0, seasonsPlayed: 0
+                        };
                     }
                 });
             }
 
+            // Map season histories per team for streak & progression calculations
+            let seasonHistories = {}; // { teamName: [ { year, w, l, pts, against, rank, isPlayoff, isChamp } ] }
+
+            // Process all past seasons
             if (realmData.seasons) {
                 realmData.seasons.forEach(season => {
                     const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[season.year] : null;
@@ -1661,67 +1697,133 @@
                     if (details.quarterfinals) { details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim().toLowerCase()); if (q.t2) playoffTeams.add(q.t2.trim().toLowerCase()); }); }
                     if (details.semifinals) { details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim().toLowerCase()); if (sf.t2) playoffTeams.add(sf.t2.trim().toLowerCase()); }); }
 
+                    let champTeams = new Set();
+                    if (details.championship) {
+                        if (details.championship.t1) champTeams.add(details.championship.t1.trim().toLowerCase());
+                        if (details.championship.t2) champTeams.add(details.championship.t2.trim().toLowerCase());
+                    }
+
                     if (details.standings && details.standings.length > 0) {
+                        // Calculate Points Ranks in this season for Over/Underachiever
+                        let ptsSorted = [...details.standings].sort((a, b) => (b.pts || 0) - (a.pts || 0));
+                        let maxSeasonPts = ptsSorted[0] ? ptsSorted[0].pts : -1;
+
                         details.standings.forEach((st, idx) => {
                             let tName = st.team.trim();
                             let pts = st.pts || 0;
                             let against = st.against || 0;
                             let diff = pts - against;
+                            let w = st.w || 0;
+                            let l = st.l || 0;
                             let isPlayoff = playoffTeams.has(tName.toLowerCase());
+                            let isChamp = champTeams.has(tName.toLowerCase());
 
                             if (!teamStats[tName]) {
-                                teamStats[tName] = { firsts: 0, seconds: 0, champApps: 0, playoffApps: 0, lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0 };
+                                teamStats[tName] = { 
+                                    firsts: 0, seconds: 0, thirds: 0, champApps: 0, playoffApps: 0, 
+                                    lasts: 0, regWins: 0, regLosses: 0, playWins: 0, playLosses: 0,
+                                    above500: 0, below500: 0, byes: 0, bestRecords: 0, mostPtsSeasons: 0,
+                                    top3Pts: 0, bottom3Pts: 0, missedPlayoffs: 0,
+                                    totalPts: 0, seasonsPlayed: 0
+                                };
                             }
 
-                            teamStats[tName].regWins += (st.w || 0);
-                            teamStats[tName].regLosses += (st.l || 0);
+                            // Career Totals Accumulation
+                            teamStats[tName].regWins += w;
+                            teamStats[tName].regLosses += l;
+                            teamStats[tName].totalPts += pts;
+                            teamStats[tName].seasonsPlayed += 1;
 
+                            if (w > l) teamStats[tName].above500 += 1;
+                            if (l > w) teamStats[tName].below500 += 1;
+                            if (idx === 0 || idx === 1) teamStats[tName].byes += 1;
+                            if (idx === 0) teamStats[tName].bestRecords += 1;
+                            if (pts === maxSeasonPts) teamStats[tName].mostPtsSeasons += 1;
+
+                            let ptsRank = ptsSorted.findIndex(p => p.team.trim().toLowerCase() === tName.toLowerCase()) + 1;
+                            let standingRank = idx + 1;
+                            if (ptsRank <= 3) teamStats[tName].top3Pts += 1;
+                            if (ptsRank >= details.standings.length - 2) teamStats[tName].bottom3Pts += 1;
+
+                            if (!isPlayoff) teamStats[tName].missedPlayoffs += 1;
+
+                            if (idx === details.standings.length - 1) teamStats[tName].lasts += 1;
+
+                            // Store Season History per team for consecutive checks & progression
+                            if (!seasonHistories[tName]) seasonHistories[tName] = [];
+                            seasonHistories[tName].push({
+                                year: parseInt(season.year),
+                                w, l, pts, against, diff, rank: standingRank, ptsRank, isPlayoff, isChamp
+                            });
+
+                            // --- SINGLE SEASON ACCOLADES EVALUATION ---
+
+                            // Most / Least Points in a Season
                             let pKey = "Most Points in a Season";
                             if (pts > (records[pKey].rawVal !== undefined ? records[pKey].rawVal : -1)) {
-                                records[pKey].val = `${pts} (${season.year})`;
-                                records[pKey].rawVal = pts;
-                                records[pKey].teams = [tName];
-                            } else if (pts === records[pKey].rawVal) {
-                                records[pKey].teams.push(tName);
-                            }
+                                records[pKey].val = `${pts} (${season.year})`; records[pKey].rawVal = pts; records[pKey].teams = [tName];
+                            } else if (pts === records[pKey].rawVal) records[pKey].teams.push(tName);
 
-                            let lKey = "Least Points in a Season";
-                            if (pts < (records[lKey].rawVal !== undefined ? records[lKey].rawVal : Infinity)) {
-                                records[lKey].val = `${pts} (${season.year})`;
-                                records[lKey].rawVal = pts;
-                                records[lKey].teams = [tName];
-                            } else if (pts === records[lKey].rawVal) {
-                                records[lKey].teams.push(tName);
-                            }
+                            let lPtsKey = "Least Points in a Season";
+                            if (pts < (records[lPtsKey].rawVal !== undefined ? records[lPtsKey].rawVal : Infinity)) {
+                                records[lPtsKey].val = `${pts} (${season.year})`; records[lPtsKey].rawVal = pts; records[lPtsKey].teams = [tName];
+                            } else if (pts === records[lPtsKey].rawVal) records[lPtsKey].teams.push(tName);
 
+                            // Best / Worst Single Season Record
+                            let winPct = (w + l) > 0 ? (w / (w + l)) : 0;
+                            let recKey = "Best single season record";
+                            if (winPct > (records[recKey].rawVal !== undefined ? records[recKey].rawVal : -1)) {
+                                records[recKey].val = `${w}-${l} (${season.year})`; records[recKey].rawVal = winPct; records[recKey].teams = [tName];
+                            } else if (winPct === records[recKey].rawVal) records[recKey].teams.push(tName);
+
+                            let worstRecKey = "Worst single season record";
+                            if (winPct < (records[worstRecKey].rawVal !== undefined ? records[worstRecKey].rawVal : Infinity)) {
+                                records[worstRecKey].val = `${w}-${l} (${season.year})`; records[worstRecKey].rawVal = winPct; records[worstRecKey].teams = [tName];
+                            } else if (winPct === records[worstRecKey].rawVal) records[worstRecKey].teams.push(tName);
+
+                            // Luckiest (Lowest Points Against)
+                            let luckKey = "Luckiest: Lowest Points Against";
+                            if (against > 0 && against < (records[luckKey].rawVal !== undefined ? records[luckKey].rawVal : Infinity)) {
+                                records[luckKey].val = `${against} PA (${season.year})`; records[luckKey].rawVal = against; records[luckKey].teams = [tName];
+                            } else if (against > 0 && against === records[luckKey].rawVal) records[luckKey].teams.push(tName);
+
+                            // Highest Differential
+                            let diffKey = "Highest differential";
+                            if (diff > (records[diffKey].rawVal !== undefined ? records[diffKey].rawVal : -Infinity)) {
+                                records[diffKey].val = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} (${season.year})`; records[diffKey].rawVal = diff; records[diffKey].teams = [tName];
+                            } else if (records[diffKey].rawVal !== undefined && Math.abs(diff - records[diffKey].rawVal) < 0.01) records[diffKey].teams.push(tName);
+
+                            // Just Got In / Just Knocked Out
                             let inKey = "Just Got In: Lowest Differential with Playoff App.";
                             if (isPlayoff) {
                                 if (diff < (records[inKey].rawVal !== undefined ? records[inKey].rawVal : Infinity)) {
-                                    records[inKey].val = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} (${season.year})`;
-                                    records[inKey].rawVal = diff;
-                                    records[inKey].teams = [tName];
-                                } else if (records[inKey].rawVal !== undefined && Math.abs(diff - records[inKey].rawVal) < 0.01) {
-                                    records[inKey].teams.push(tName);
-                                }
+                                    records[inKey].val = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} (${season.year})`; records[inKey].rawVal = diff; records[inKey].teams = [tName];
+                                } else if (records[inKey].rawVal !== undefined && Math.abs(diff - records[inKey].rawVal) < 0.01) records[inKey].teams.push(tName);
                             }
 
                             let outKey = "Just Knocked Out: Highest Differential without Playoff App.";
                             if (!isPlayoff) {
                                 if (diff > (records[outKey].rawVal !== undefined ? records[outKey].rawVal : -Infinity)) {
-                                    records[outKey].val = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} (${season.year})`;
-                                    records[outKey].rawVal = diff;
-                                    records[outKey].teams = [tName];
-                                } else if (records[outKey].rawVal !== undefined && Math.abs(diff - records[outKey].rawVal) < 0.01) {
-                                    records[outKey].teams.push(tName);
-                                }
+                                    records[outKey].val = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} (${season.year})`; records[outKey].rawVal = diff; records[outKey].teams = [tName];
+                                } else if (records[outKey].rawVal !== undefined && Math.abs(diff - records[outKey].rawVal) < 0.01) records[outKey].teams.push(tName);
                             }
 
-                            if (idx === details.standings.length - 1) {
-                                teamStats[tName].lasts += 1;
-                            }
+                            // Overachiever / Underachiever (Points Rank vs Standings Rank)
+                            let overVal = ptsRank - standingRank; // Higher points rank vs low standings rank = positive overachievement
+                            let overKey = "Biggest Overachiever";
+                            if (overVal > (records[overKey].rawVal !== undefined ? records[overKey].rawVal : -Infinity)) {
+                                records[overKey].val = `+${overVal} Ranks (${season.year})`; records[overKey].rawVal = overVal; records[overKey].teams = [tName];
+                            } else if (records[overKey].rawVal !== undefined && overVal === records[overKey].rawVal) records[overKey].teams.push(tName);
+
+                            let underVal = ptsRank - standingRank; // Most negative value = underachiever
+                            let underKey = "Biggest Underachiever";
+                            if (underVal < (records[underKey].rawVal !== undefined ? records[underKey].rawVal : Infinity)) {
+                                records[underKey].val = `${underVal} Ranks (${season.year})`; records[underKey].rawVal = underVal; records[underKey].teams = [tName];
+                            } else if (records[underKey].rawVal !== undefined && underVal === records[underKey].rawVal) records[underKey].teams.push(tName);
                         });
                     }
 
+                    // Championship, 2nds, and 3rd place finishes
                     if (details.championship) {
                         let c1 = details.championship.t1 ? details.championship.t1.trim() : "";
                         let c2 = details.championship.t2 ? details.championship.t2.trim() : "";
@@ -1730,14 +1832,19 @@
                         if (winnerNum === 1 || winnerNum === 2) {
                             let champ = winnerNum === 2 ? c2 : c1;
                             let runner = winnerNum === 2 ? c1 : c2;
-
                             if (champ && teamStats[champ]) teamStats[champ].firsts += 1;
                             if (runner && teamStats[runner]) teamStats[runner].seconds += 1;
                         }
-
                         [c1, c2].forEach(cTeam => {
                             if (cTeam && teamStats[cTeam]) teamStats[cTeam].champApps += 1;
                         });
+                    }
+
+                    if (details.thirdPlaceGame) {
+                        let tp1 = details.thirdPlaceGame.t1 ? details.thirdPlaceGame.t1.trim() : "";
+                        let tp2 = details.thirdPlaceGame.t2 ? details.thirdPlaceGame.t2.trim() : "";
+                        let tpWinner = details.thirdPlaceGame.winner === 2 ? tp2 : details.thirdPlaceGame.t1;
+                        if (tpWinner && teamStats[tpWinner]) teamStats[tpWinner].thirds += 1;
                     }
 
                     playoffTeams.forEach(ptName => {
@@ -1760,44 +1867,97 @@
                 });
             }
 
+            // --- STREAK & PROGRESSION EVALUATION (Consecutive Accolades & Most Improved) ---
+            Object.keys(seasonHistories).forEach(tName => {
+                let hList = seasonHistories[tName].sort((a, b) => a.year - b.year);
+
+                let maxWinStreak = 0, currWinStreak = 0;
+                let maxLoseStreak = 0, currLoseStreak = 0;
+                let maxPlayoffStreak = 0, currPlayoffStreak = 0;
+                let maxDroughtStreak = 0, currDroughtStreak = 0;
+                let maxChampStreak = 0, currChampStreak = 0;
+
+                for (let i = 0; i < hList.length; i++) {
+                    let s = hList[i];
+
+                    // Consecutive Winning / Losing Seasons
+                    if (s.w > s.l) { currWinStreak++; maxWinStreak = Math.max(maxWinStreak, currWinStreak); } else { currWinStreak = 0; }
+                    if (s.l > s.w) { currLoseStreak++; maxLoseStreak = Math.max(maxLoseStreak, currLoseStreak); } else { currLoseStreak = 0; }
+
+                    // Consecutive Playoff Apps vs Drought
+                    if (s.isPlayoff) { currPlayoffStreak++; maxPlayoffStreak = Math.max(maxPlayoffStreak, currPlayoffStreak); currDroughtStreak = 0; } 
+                    else { currDroughtStreak++; maxDroughtStreak = Math.max(maxDroughtStreak, currDroughtStreak); currPlayoffStreak = 0; }
+
+                    // Consecutive Champ Apps
+                    if (s.isChamp) { currChampStreak++; maxChampStreak = Math.max(maxChampStreak, currChampStreak); } else { currChampStreak = 0; }
+
+                    // Most Improved Season (Jump in regular season standings from previous year)
+                    if (i > 0 && hList[i - 1].year === s.year - 1) {
+                        let jump = hList[i - 1].rank - s.rank; // e.g. 10th last year to 2nd this year = 8 ranks improved
+                        let impKey = "Most improved season";
+                        if (jump > (records[impKey].rawVal !== undefined ? records[impKey].rawVal : -Infinity)) {
+                            records[impKey].val = `+${jump} Ranks (${s.year})`; records[impKey].rawVal = jump; records[impKey].teams = [tName];
+                        } else if (records[impKey].rawVal !== undefined && jump === records[impKey].rawVal && jump > 0) {
+                            records[impKey].teams.push(tName);
+                        }
+                    }
+                }
+
+                // Map Streaks to Team Stats
+                teamStats[tName].consecWinning = maxWinStreak;
+                teamStats[tName].consecLosing = maxLoseStreak;
+                teamStats[tName].consecPlayoffs = maxPlayoffStreak;
+                teamStats[tName].consecDrought = maxDroughtStreak;
+                teamStats[tName].consecChampApps = maxChampStreak;
+            });
+
+            // Map Team Stats to Career Accolade Records
             Object.keys(teamStats).forEach(tName => {
                 let ts = teamStats[tName];
 
-                let k1 = "Iron Throne: Most championships";
-                if (ts.firsts > records[k1].val) { records[k1].val = ts.firsts; records[k1].teams = [tName]; }
-                else if (ts.firsts === records[k1].val && ts.firsts > 0) records[k1].teams.push(tName);
+                const checkMax = (key, val) => {
+                    if (val > records[key].val) { records[key].val = val; records[key].teams = [tName]; }
+                    else if (val === records[key].val && val > 0) { records[key].teams.push(tName); }
+                };
 
-                let k2 = "Running Up: Most 2nds";
-                if (ts.seconds > records[k2].val) { records[k2].val = ts.seconds; records[k2].teams = [tName]; }
-                else if (ts.seconds === records[k2].val && ts.seconds > 0) records[k2].teams.push(tName);
+                checkMax("Iron Throne: Most championships", ts.firsts);
+                checkMax("Running Up: Most 2nds", ts.seconds);
+                checkMax("3rd place finishes", ts.thirds);
+                checkMax("Most championship appearances", ts.champApps);
+                checkMax("Most playoff appearances", ts.playoffApps);
+                checkMax("Reek: last finishes", ts.lasts);
+                checkMax("Most Reg Season Wins", ts.regWins);
+                checkMax("Most Reg Season losses", ts.regLosses);
+                checkMax("Most Playoff Wins", ts.playWins);
+                checkMax("Most Playoff losses", ts.playLosses);
+                checkMax("Most seasons above .500", ts.above500);
+                checkMax("Most seasons below .500", ts.below500);
+                checkMax("Most first round byes earned", ts.byes);
+                checkMax("Most seasons with best record", ts.bestRecords);
+                checkMax("Most seasons with most points", ts.mostPtsSeasons);
+                checkMax("Most top 3 scoring seasons", ts.top3Pts);
+                checkMax("Most bottom 3 scoring seasons", ts.bottom3Pts);
+                checkMax("Most seasons missing playoffs", ts.missedPlayoffs);
+                checkMax("Consecutive winning seasons", ts.consecWinning);
+                checkMax("Consecutive losing seasons", ts.consecLosing);
+                checkMax("Consecutive playoff appearances", ts.consecPlayoffs);
+                checkMax("Consecutive championship appearances", ts.consecChampApps);
+                checkMax("Longest playoff drought", ts.consecDrought);
 
-                let k3 = "Most championship appearances";
-                if (ts.champApps > records[k3].val) { records[k3].val = ts.champApps; records[k3].teams = [tName]; }
-                else if (ts.champApps === records[k3].val && ts.champApps > 0) records[k3].teams.push(tName);
+                // Career Averages
+                if (ts.seasonsPlayed > 0) {
+                    let avgPts = (ts.totalPts / ts.seasonsPlayed).toFixed(1);
 
-                let k4 = "Most playoff appearances";
-                if (ts.playoffApps > records[k4].val) { records[k4].val = ts.playoffApps; records[k4].teams = [tName]; }
-                else if (ts.playoffApps === records[k4].val && ts.playoffApps > 0) records[k4].teams.push(tName);
+                    let hAvgKey = "Highest average career points";
+                    if (avgPts > (records[hAvgKey].rawVal !== undefined ? records[hAvgKey].rawVal : -1)) {
+                        records[hAvgKey].val = `${avgPts} pts/yr`; records[hAvgKey].rawVal = avgPts; records[hAvgKey].teams = [tName];
+                    } else if (records[hAvgKey].rawVal !== undefined && avgPts === records[hAvgKey].rawVal) records[hAvgKey].teams.push(tName);
 
-                let k5 = "Reek: last finishes";
-                if (ts.lasts > records[k5].val) { records[k5].val = ts.lasts; records[k5].teams = [tName]; }
-                else if (ts.lasts === records[k5].val && ts.lasts > 0) records[k5].teams.push(tName);
-
-                let k6 = "Most Reg Season Wins";
-                if (ts.regWins > records[k6].val) { records[k6].val = ts.regWins; records[k6].teams = [tName]; }
-                else if (ts.regWins === records[k6].val && ts.regWins > 0) records[k6].teams.push(tName);
-
-                let k7 = "Most Reg Season losses";
-                if (ts.regLosses > records[k7].val) { records[k7].val = ts.regLosses; records[k7].teams = [tName]; }
-                else if (ts.regLosses === records[k7].val && ts.regLosses > 0) records[k7].teams.push(tName);
-
-                let k8 = "Most Playoff Wins";
-                if (ts.playWins > records[k8].val) { records[k8].val = ts.playWins; records[k8].teams = [tName]; }
-                else if (ts.playWins === records[k8].val && ts.playWins > 0) records[k8].teams.push(tName);
-
-                let k9 = "Most Playoff losses";
-                if (ts.playLosses > records[k9].val) { records[k9].val = ts.playLosses; records[k9].teams = [tName]; }
-                else if (ts.playLosses === records[k9].val && ts.playLosses > 0) records[k9].teams.push(tName);
+                    let lAvgKey = "Lowest average career points";
+                    if (avgPts < (records[lAvgKey].rawVal !== undefined ? records[lAvgKey].rawVal : Infinity)) {
+                        records[lAvgKey].val = `${avgPts} pts/yr`; records[lAvgKey].rawVal = avgPts; records[lAvgKey].teams = [tName];
+                    } else if (records[lAvgKey].rawVal !== undefined && avgPts === records[lAvgKey].rawVal) records[lAvgKey].teams.push(tName);
+                }
             });
 
             return records;
