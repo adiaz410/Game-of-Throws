@@ -181,14 +181,14 @@
         .table-container {
             overflow-x: auto;
             margin-bottom: 2rem;
-            max-height: 600px; /* Enables vertical scrolling containment for freezing headers */
+            max-height: 600px;
             overflow-y: auto;
             position: relative;
         }
 
         table {
             width: 100%;
-            border-collapse: separate; /* Required for sticky cell borders */
+            border-collapse: separate;
             border-spacing: 0;
             background: var(--bg-panel);
             border: 1px solid #2c2f3b;
@@ -222,8 +222,6 @@
             background: #1a1c23;
         }
 
-        /* Specific Table Freezing Rules */
-        /* Teams Table: Freeze Header + First Column */
         #teams-table th:first-child,
         #teams-table td:first-child {
             position: sticky;
@@ -232,11 +230,10 @@
             background: var(--bg-panel);
         }
         #teams-table th:first-child {
-            z-index: 15; /* Higher than regular headers so it stays on top of column 1 */
+            z-index: 15;
             background: #111318;
         }
 
-        /* History Table: Freeze Header + First Column (Year) */
         #seasons-table th:first-child,
         #seasons-table td:first-child {
             position: sticky;
@@ -249,7 +246,6 @@
             background: #111318;
         }
 
-        /* Matrix Grid Table: Freeze Header Row + First Column */
         .matrix-table th:first-child,
         .matrix-table td:first-child {
             position: sticky;
@@ -385,7 +381,6 @@
             border: 1px solid #2c2f3b;
         }
 
-        /* Matrix Grid Styles */
         .matrix-table {
             font-size: 0.85rem;
             text-align: center;
@@ -438,7 +433,6 @@
             margin-bottom: 0.3rem;
         }
 
-        /* Playoff Bracket Styles */
         .bracket-container {
             display: flex;
             justify-content: space-around;
@@ -609,7 +603,16 @@
         <button class="nav-btn" onclick="switchPage('teams')">Teams</button>
         <button class="nav-btn" onclick="switchPage('matchups')">Matchups</button>
         <button class="nav-btn" onclick="switchPage('standings')">Standings</button>
-        <button class="nav-btn" onclick="switchPage('current-season')">Current Season</button>
+        
+        <!-- Nested Current Season Dropdown -->
+        <div class="dropdown">
+            <button class="dropdown-toggle" id="current-season-tab">Current Season ▾</button>
+            <div class="dropdown-content">
+                <button onclick="switchPage('current-season')">Standings & Bracket</button>
+                <button onclick="switchPage('sleeper-matchups')">Live Scoreboard</button>
+            </div>
+        </div>
+
         <button class="nav-btn" onclick="switchPage('seasons')">History</button>
         <button class="nav-btn" onclick="switchPage('champions')">Hall of Champions</button>
         <button class="nav-btn" onclick="switchPage('accolades')">Accolades</button>
@@ -702,6 +705,52 @@
             <div id="current-season-display"></div>
         </section>
 
+        <!-- SLEEPER LIVE MATCHUPS PAGE -->
+        <section id="sleeper-matchups" class="page">
+            <div class="page-header">
+                <h2>Live Scoreboard</h2>
+                <div class="action-btn-group">
+                    <select id="sleeper-week-select" onchange="loadSleeperMatchups()" style="background:#0c0d10; border:1px solid var(--border-gold); color:var(--text-main); padding:0.4rem 0.8rem; font-family:'Cinzel',serif;">
+                        <!-- Dynamically populated weeks 1 to 14 -->
+                    </select>
+                    <button class="action-btn" onclick="loadSleeperMatchups()">🔄 Refresh Scores</button>
+                    <button class="action-btn" id="btn-sleeper-settings" onclick="requestPassword('sleeper-settings')">⚙️ Settings</button>
+                </div>
+            </div>
+
+            <!-- Sleeper League ID & User Mapping Edit Container -->
+            <div id="sleeper-settings-container" class="edit-form-container">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Configure Sleeper Integration</h3>
+                
+                <div class="edit-row" style="grid-template-columns: 1fr auto; margin-bottom: 1.5rem;">
+                    <div>
+                        <label>Sleeper League ID</label>
+                        <input type="text" id="input-sleeper-league-id" placeholder="e.g. 104529384758693">
+                    </div>
+                    <div>
+                        <button class="action-btn" onclick="renderSleeperMappingRows()" style="margin-top:1.2rem;">🔍 Load Rosters</button>
+                    </div>
+                </div>
+
+                <h4 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom: 0.8rem; border-bottom: 1px solid #2c2f3b; padding-bottom: 0.4rem;">
+                    Sleeper Owners ➔ Custom House Mapping
+                </h4>
+                
+                <div id="sleeper-mapping-rows">
+                    <p style="color: var(--text-muted); font-style: italic;">Enter a valid Sleeper League ID and click "Load Rosters" to map managers to custom Houses.</p>
+                </div>
+
+                <div style="margin-top:1.5rem;">
+                    <button class="action-btn" onclick="saveSleeperLeagueId()" style="background:var(--border-gold); color:var(--bg-dark);">💾 Save Settings & Mappings</button>
+                </div>
+            </div>
+
+            <!-- Live Scoreboard Matchups Grid -->
+            <div class="matchups-grid" id="sleeper-matchups-grid">
+                <p style="color: var(--text-muted); font-style: italic;">Configure your Sleeper League ID using the settings button above to load live matchups.</p>
+            </div>
+        </section>
+
         <!-- RANKINGS PAGE -->
         <section id="rankings" class="page">
             <div class="page-header">
@@ -779,7 +828,6 @@
                 </div>
             </div>
 
-            <!-- Compact House Filter Control (Visible in Cards View) -->
             <div id="matchup-filter-container" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-start;">
                 <select id="matchup-house-filter" onchange="filterMatchups()" style="width: auto; min-width: 140px; padding: 0.35rem 0.6rem; background: #0c0d10; border: 1px solid var(--border-gold); color: var(--text-main); font-family: 'Lora', serif; font-size: 0.85rem;">
                     <option value="">All Houses</option>
@@ -1058,9 +1106,10 @@
         let realmData = {};
         let editModes = { teams: false, matchups: false, currentSeason: false, pastSeason: null };
         let activePageId = 'landing';
-        let matchupViewMode = 'cards'; // 'cards' or 'matrix'
+        let matchupViewMode = 'cards';
         let teamSortColumn = 'team';
         let teamSortDirection = 'asc';
+        let editingSleeperSettings = false;
 
         let standingsSortState = {
             alltime: { column: 'winPct', direction: 'desc' },
@@ -1071,6 +1120,7 @@
         function requestPassword(page) {
             let isEditing = false;
             if (page === 'teams') isEditing = editModes.teams;
+            else if (page === 'sleeper-settings') isEditing = editingSleeperSettings;
             else if (page === 'matchups') isEditing = editModes.matchups;
             else if (page === 'current-edit') isEditing = editModes.currentSeason;
             else if (page.startsWith('past-season-')) {
@@ -1084,11 +1134,14 @@
                 return;
             }
 
-            if (isEditing) toggleEdit(page);
-            else {
+            if (isEditing) {
+                if (page === 'sleeper-settings') toggleSleeperSettings();
+                else toggleEdit(page);
+            } else {
                 let pwd = prompt("Enter password to edit settings:");
                 if (pwd === "Domicuatro10!") {
                     if (page === 'promote-season') concludeCurrentSeason();
+                    else if (page === 'sleeper-settings') toggleSleeperSettings();
                     else toggleEdit(page);
                 } else if (pwd !== null) alert("Incorrect password!");
             }
@@ -1101,13 +1154,120 @@
             else if (page.startsWith('past-season-')) {
                 let yr = page.replace('past-season-', '');
                 if (editModes.pastSeason === yr) {
-                    // Save changes when closing the editor
                     savePastSeasonForm(yr);
                 } else {
                     editModes.pastSeason = yr;
                 }
             }
             renderData();
+        }
+
+        function toggleSleeperSettings() {
+            editingSleeperSettings = !editingSleeperSettings;
+            const container = document.getElementById('sleeper-settings-container');
+            if (container) {
+                container.classList.toggle('active', editingSleeperSettings);
+            }
+            if (editingSleeperSettings) {
+                if (realmData.sleeperLeagueId) {
+                    document.getElementById('input-sleeper-league-id').value = realmData.sleeperLeagueId;
+                }
+                renderSleeperMappingRows();
+            }
+            const btn = document.getElementById('btn-sleeper-settings');
+            if (btn) btn.textContent = editingSleeperSettings ? "⚙️ Close Editor" : "⚙️ Settings";
+        }
+
+        async function renderSleeperMappingRows() {
+            const container = document.getElementById('sleeper-mapping-rows');
+            const leagueId = document.getElementById('input-sleeper-league-id').value.trim() || realmData.sleeperLeagueId;
+
+            if (!leagueId) {
+                container.innerHTML = `<p style="color: var(--text-muted); font-style: italic;">Enter a valid Sleeper League ID above to load rosters.</p>`;
+                return;
+            }
+
+            container.innerHTML = `<p style="color: var(--border-gold);">Fetching rosters from Sleeper...</p>`;
+
+            try {
+                const [usersRes, rostersRes] = await Promise.all([
+                    fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
+                    fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`)
+                ]);
+
+                if (!usersRes.ok || !rostersRes.ok) throw new Error("Verify your League ID.");
+
+                const users = await usersRes.json();
+                const rosters = await rostersRes.json();
+
+                let userMap = {};
+                users.forEach(u => { userMap[u.user_id] = u.display_name || u.username; });
+
+                const availableTeams = getAvailableTeams();
+                if (!realmData.sleeperMappings) realmData.sleeperMappings = {};
+
+                let html = rosters.map(r => {
+                    let ownerName = userMap[r.owner_id] || `Roster #${r.roster_id}`;
+                    let currentAssigned = realmData.sleeperMappings[r.roster_id] || "";
+
+                    // Auto-match suggestion if not mapped
+                    if (!currentAssigned && realmData.currentSeason && realmData.currentSeason.standings) {
+                        let ownerLower = ownerName.toLowerCase();
+                        let found = realmData.currentSeason.standings.find(st => {
+                            let teamStr = st.team.toLowerCase();
+                            let ownerStr = (st.owner || "").toLowerCase();
+                            return teamStr.includes(ownerLower) || ownerStr.includes(ownerLower);
+                        });
+                        if (found) currentAssigned = found.team;
+                    }
+
+                    let options = availableTeams.map(t => `<option value="${t}" ${currentAssigned === t ? 'selected' : ''}>${t}</option>`).join('');
+
+                    return `
+                        <div class="edit-row" style="grid-template-columns: 1fr 1.5fr;">
+                            <div>
+                                <label style="font-size:0.75rem; color:var(--text-muted);">Roster #${r.roster_id}</label>
+                                <strong style="color:var(--text-main);">${ownerName}</strong>
+                            </div>
+                            <div>
+                                <label>Custom House Assignment</label>
+                                <select class="sleeper-mapping-select" data-roster-id="${r.roster_id}">
+                                    <option value="">-- Select Custom House --</option>
+                                    ${options}
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = html || `<p style="color: var(--text-muted);">No rosters found for this League ID.</p>`;
+
+            } catch (err) {
+                container.innerHTML = `<p style="color: #ff4d4f;">Failed to load rosters: ${err.message}</p>`;
+            }
+        }
+
+        async function saveSleeperLeagueId() {
+            const val = document.getElementById('input-sleeper-league-id').value.trim();
+            realmData.sleeperLeagueId = val;
+
+            if (!realmData.sleeperMappings) realmData.sleeperMappings = {};
+
+            const mappingSelects = document.querySelectorAll('.sleeper-mapping-select');
+            mappingSelects.forEach(select => {
+                const rosterId = select.getAttribute('data-roster-id');
+                const houseVal = select.value;
+                if (rosterId) {
+                    realmData.sleeperMappings[rosterId] = houseVal;
+                }
+            });
+
+            await saveRealmData(realmData);
+            editingSleeperSettings = false;
+            document.getElementById('sleeper-settings-container').classList.remove('active');
+            const btn = document.getElementById('btn-sleeper-settings');
+            if (btn) btn.textContent = "⚙️ Settings";
+            loadSleeperMatchups();
         }
 
         function savePastSeasonForm(yr) {
@@ -1201,15 +1361,16 @@
 
             if (pageId.startsWith('past-season-')) {
                 document.getElementById('past-seasons-tab').classList.add('active');
+            } else if (pageId === 'current-season' || pageId === 'sleeper-matchups') {
+                document.getElementById('current-season-tab').classList.add('active');
             } else {
                 const btn = document.querySelector(`nav button[onclick*="'${pageId}'"]`);
                 if (btn) btn.classList.add('active');
             }
-        }
 
-        function cleanName(str) {
-            if (!str) return "";
-            return str.replace(/👑|💰/g, '').replace(/\([^)]*\)/g, '').trim();
+            if (pageId === 'sleeper-matchups') {
+                loadSleeperMatchups();
+            }
         }
 
         function sortDataNewestToOldest() {
@@ -1333,7 +1494,6 @@
             return Object.keys(stats).map(team => {
                 let data = stats[team];
                 
-                // Nemesis calculation (Most losses against)
                 let maxL = 0;
                 let nemesisList = [];
                 for (let opp in data.lossesVs) {
@@ -1352,7 +1512,6 @@
                     nemesisStr = `Many (${nemesisList.length})`;
                 }
 
-                // Victim calculation (Most wins against)
                 let maxW = 0;
                 let victimList = [];
                 for (let opp in data.winsVs) {
@@ -2772,7 +2931,6 @@
         function renderData() {
             sortDataNewestToOldest();
 
-            // 1. Rankings
             const allRankings = calculateRankings();
             document.getElementById('rankings-body').innerHTML = allRankings.map((row) => `
                 <tr>
@@ -2786,10 +2944,8 @@
                 </tr>
             `).join('');
 
-            // 2. Accolades
             renderAccolades();
 
-            // 3. Teams / Houses Table & Edit Form
             const teamsEditContainer = document.getElementById('teams-edit-container');
             if (editModes.teams) {
                 teamsEditContainer.classList.add('active');
@@ -2823,7 +2979,6 @@
                 </tr>
             `).join('');
 
-            // 4. Standings Tables
             let allTimeArr = calculateAllTimeStandings();
             let regArr = calculateRegularSeasonStandings();
             let playArr = calculatePlayoffStandings();
@@ -2855,10 +3010,8 @@
                 <tr><td><strong>${row.team}</strong></td><td>${row.wins}</td><td>${row.losses}</td><td>${(row.winPct * 100).toFixed(1)}%</td></tr>
             `).join('');
 
-            // 5. Matchups Rendering
             renderMatchups();
 
-            // 6. History / Seasons Chronicles Table
             if (realmData.seasons) {
                 document.getElementById('seasons-body').innerHTML = realmData.seasons.map((row) => {
                     const year = row.year;
@@ -2890,7 +3043,6 @@
                     </tr>`;
                 }).join('');
 
-                // 7. Hall of Champions
                 document.getElementById('champions-grid').innerHTML = realmData.seasons.map((row) => {
                     const year = row.year;
                     const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[year] : null;
@@ -2914,7 +3066,6 @@
                 }).join('');
             }
 
-            // 8. Current Season Edit Form & Display
             const currentEditContainer = document.getElementById('current-edit-container');
             if (editModes.currentSeason) {
                 currentEditContainer.classList.add('active');
@@ -2924,18 +3075,14 @@
             }
 
             renderCurrentSeasonDisplay();
-
-            // 9. Past Seasons Dropdown & Pages
             renderPastSeasonsDropdownAndPages();
 
-            // Update Edit Buttons Labels
             const teamsBtn = document.getElementById('btn-teams');
             if (teamsBtn) teamsBtn.textContent = editModes.teams ? "⚙️ Close Editor" : "⚙️";
 
             const matchupsBtn = document.getElementById('btn-matchups');
             if (matchupsBtn) matchupsBtn.textContent = editModes.matchups ? "⚙️ Close Editor" : "⚙️";
 
-            // Restore initial page hash navigation state
             const initialPage = window.location.hash ? window.location.hash.replace('#/', '') : activePageId;
             switchPage(initialPage);
         }
@@ -2951,6 +3098,134 @@
             const currentPage = window.location.hash ? window.location.hash.replace('#/', '') : 'landing';
             switchPage(currentPage);
         };
+
+        function initSleeperWeekDropdown() {
+            const select = document.getElementById('sleeper-week-select');
+            if (!select || select.children.length > 0) return;
+            
+            let options = '';
+            for (let w = 1; w <= 14; w++) {
+                options += `<option value="${w}">Week ${w}</option>`;
+            }
+            select.innerHTML = options;
+        }
+
+        async function loadSleeperMatchups() {
+            initSleeperWeekDropdown();
+            const grid = document.getElementById('sleeper-matchups-grid');
+            const leagueId = realmData.sleeperLeagueId;
+
+            if (!leagueId) {
+                grid.innerHTML = `<p style="color: var(--text-muted); font-style: italic;">Please click the settings button (⚙️) to enter your Sleeper League ID first.</p>`;
+                return;
+            }
+
+            const weekSelect = document.getElementById('sleeper-week-select');
+            const selectedWeek = weekSelect ? weekSelect.value : "1";
+
+            grid.innerHTML = `<p style="color: var(--border-gold);">Summoning live scores from Sleeper for Week ${selectedWeek}...</p>`;
+
+            try {
+                const [usersRes, rostersRes, matchupsRes] = await Promise.all([
+                    fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
+                    fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
+                    fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${selectedWeek}`)
+                ]);
+
+                if (!usersRes.ok || !rostersRes.ok || !matchupsRes.ok) {
+                    throw new Error("Failed to fetch data from Sleeper. Verify your League ID.");
+                }
+
+                const users = await usersRes.json();
+                const rosters = await rostersRes.json();
+                const matchups = await matchupsRes.json();
+
+                if (!matchups || matchups.length === 0) {
+                    grid.innerHTML = `<p style="color: var(--text-muted);">No matchup data found for Week ${selectedWeek}.</p>`;
+                    return;
+                }
+
+                let userMap = {};
+                users.forEach(u => {
+                    userMap[u.user_id] = u.display_name || u.username;
+                });
+
+                let rosterToHouse = {};
+                rosters.forEach(r => {
+                    let sleeperOwnerName = userMap[r.owner_id] || `Roster #${r.roster_id}`;
+                    
+                    // Priority 1: Use explicit manual mapping
+                    let assignedHouse = realmData.sleeperMappings ? realmData.sleeperMappings[r.roster_id] : null;
+
+                    // Priority 2: Fallback to auto-matching if unmapped
+                    if (!assignedHouse && realmData.currentSeason && realmData.currentSeason.standings) {
+                        let ownerLower = sleeperOwnerName.toLowerCase();
+                        let found = realmData.currentSeason.standings.find(st => {
+                            let teamStr = st.team.toLowerCase();
+                            let ownerStr = (st.owner || "").toLowerCase();
+                            return teamStr.includes(ownerLower) || ownerStr.includes(ownerLower);
+                        });
+                        if (found) assignedHouse = found.team;
+                    }
+
+                    // Priority 3: Fallback to Sleeper owner name
+                    rosterToHouse[r.roster_id] = assignedHouse || sleeperOwnerName;
+                });
+
+                let matchupPairs = {};
+                matchups.forEach(m => {
+                    let mId = m.matchup_id;
+                    if (!mId) return; 
+                    if (!matchupPairs[mId]) matchupPairs[mId] = [];
+                    matchupPairs[mId].push(m);
+                });
+
+                let html = '';
+                for (let mId in matchupPairs) {
+                    let pair = matchupPairs[mId];
+                    if (pair.length < 2) continue; 
+
+                    let team1 = pair[0];
+                    let team2 = pair[1];
+
+                    let t1Name = rosterToHouse[team1.roster_id] || `Team ${team1.roster_id}`;
+                    let t2Name = rosterToHouse[team2.roster_id] || `Team ${team2.roster_id}`;
+
+                    let t1Score = team1.points !== undefined ? team1.points : 0;
+                    let t2Score = team2.points !== undefined ? team2.points : 0;
+
+                    let colorT1 = t1Score > t2Score ? '#c5a059' : 'var(--text-main)';
+                    let colorT2 = t2Score > t1Score ? '#c5a059' : 'var(--text-main)';
+
+                    html += `
+                        <div class="duel-card">
+                            <div class="duel-header">
+                                <span class="duel-house">${formatNameWithBanner(t1Name)}</span>
+                                <span class="duel-vs">vs</span>
+                                <span class="duel-house" style="text-align:right;">${formatNameWithBanner(t2Name)}</span>
+                            </div>
+                            <div class="duel-stats">
+                                <div class="duel-stat-box" style="text-align: left; padding-left: 0.5rem;">
+                                    <div style="font-size: 1.1rem; margin-top: 0.3rem;">
+                                        <strong style="color:${colorT1};">${t1Score.toFixed(2)}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">PTS</span>
+                                    </div>
+                                </div>
+                                <div class="duel-stat-box" style="text-align: right; padding-right: 0.5rem;">
+                                    <div style="font-size: 1.1rem; margin-top: 0.3rem;">
+                                        <strong style="color:${colorT2};">${t2Score.toFixed(2)}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">PTS</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                grid.innerHTML = html || `<p style="color: var(--text-muted);">No active head-to-head pairings found for this week.</p>`;
+
+            } catch (err) {
+                grid.innerHTML = `<p style="color: #ff4d4f;">Error pulling data from Sleeper: ${err.message}</p>`;
+            }
+        }
     </script>
 </body>
 </html>
