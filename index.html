@@ -181,11 +181,15 @@
         .table-container {
             overflow-x: auto;
             margin-bottom: 2rem;
+            max-height: 600px; /* Enables vertical scrolling containment for freezing headers */
+            overflow-y: auto;
+            position: relative;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate; /* Required for sticky cell borders */
+            border-spacing: 0;
             background: var(--bg-panel);
             border: 1px solid #2c2f3b;
             box-shadow: 0 8px 16px rgba(0,0,0,0.4);
@@ -195,7 +199,9 @@
             padding: 0.85rem 1rem;
             text-align: left;
             border-bottom: 1px solid #2c2f3b;
+            border-right: 1px solid #2c2f3b;
             font-size: 0.95rem;
+            background: var(--bg-panel);
         }
 
         th {
@@ -206,6 +212,9 @@
             white-space: nowrap;
             cursor: pointer;
             user-select: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         th:hover {
@@ -213,12 +222,56 @@
             background: #1a1c23;
         }
 
+        /* Specific Table Freezing Rules */
+        /* Teams Table: Freeze Header + First Column */
+        #teams-table th:first-child,
+        #teams-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            background: var(--bg-panel);
+        }
+        #teams-table th:first-child {
+            z-index: 15; /* Higher than regular headers so it stays on top of column 1 */
+            background: #111318;
+        }
+
+        /* History Table: Freeze Header + First Column (Year) */
+        #seasons-table th:first-child,
+        #seasons-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            background: var(--bg-panel);
+        }
+        #seasons-table th:first-child {
+            z-index: 15;
+            background: #111318;
+        }
+
+        /* Matrix Grid Table: Freeze Header Row + First Column */
+        .matrix-table th:first-child,
+        .matrix-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            background: var(--bg-panel);
+        }
+        .matrix-table th:first-child {
+            z-index: 15;
+            background: #111318;
+        }
+        .matrix-table th {
+            top: 0;
+            z-index: 10;
+        }
+
         th.th-gold { color: #ffd700; }
         th.th-silver { color: #c0c0c0; }
         th.th-bronze { color: #cd7f32; }
         th.th-brown { color: #8b4513; }
 
-        tr:hover {
+        tr:hover td {
             background: rgba(255,255,255,0.02);
         }
 
@@ -692,7 +745,7 @@
             </div>
 
             <div class="table-container">
-                <table>
+                <table id="teams-table">
                     <thead>
                         <tr>
                             <th onclick="sortTeamsTable('team')">House / Owner ↕</th>
@@ -727,11 +780,11 @@
             </div>
 
             <!-- Compact House Filter Control (Visible in Cards View) -->
-<div id="matchup-filter-container" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-start;">
-    <select id="matchup-house-filter" onchange="filterMatchups()" style="width: auto; min-width: 140px; padding: 0.35rem 0.6rem; background: #0c0d10; border: 1px solid var(--border-gold); color: var(--text-main); font-family: 'Lora', serif; font-size: 0.85rem;">
-        <option value="">All Houses</option>
-    </select>
-</div>
+            <div id="matchup-filter-container" style="margin-bottom: 1.5rem; display: flex; justify-content: flex-start;">
+                <select id="matchup-house-filter" onchange="filterMatchups()" style="width: auto; min-width: 140px; padding: 0.35rem 0.6rem; background: #0c0d10; border: 1px solid var(--border-gold); color: var(--text-main); font-family: 'Lora', serif; font-size: 0.85rem;">
+                    <option value="">All Houses</option>
+                </select>
+            </div>
 
             <div class="matchups-grid" id="matchups-grid"></div>
             <div class="table-container" id="matchups-matrix-container" style="display:none;"></div>
@@ -807,7 +860,7 @@
                 </div>
             </div>
             <div class="table-container">
-                <table>
+                <table id="seasons-table">
                     <thead>
                         <tr>
                             <th>Year</th>
@@ -1040,7 +1093,8 @@
                 } else if (pwd !== null) alert("Incorrect password!");
             }
         }
-function toggleEdit(page) {
+
+        function toggleEdit(page) {
             if (page === 'teams') editModes.teams = !editModes.teams;
             else if (page === 'matchups') editModes.matchups = !editModes.matchups;
             else if (page === 'current-edit') editModes.currentSeason = !editModes.currentSeason;
@@ -1050,6 +1104,7 @@ function toggleEdit(page) {
             }
             renderData();
         }
+
         async function deleteSeason(year) {
             if (!confirm(`Are you sure you want to completely delete the ${year} season? This action cannot be undone.`)) return;
 
@@ -1170,7 +1225,10 @@ function toggleEdit(page) {
                     let h1W = Number(m.houseW) || 0;
                     let h2W = Number(m.opposingHouseW) || 0;
 
-                    if (h1 && h2 && stats[h1] && stats[h2]) {
+                    if (h1 && h2) {
+                        if (!stats[h1]) stats[h1] = { championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: [], status: "active", worstRank: -1, bestRegRank: Infinity, winsVs: {}, lossesVs: {} };
+                        if (!stats[h2]) stats[h2] = { championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: [], status: "active", worstRank: -1, bestRegRank: Infinity, winsVs: {}, lossesVs: {} };
+
                         stats[h1].winsVs[h2] = (stats[h1].winsVs[h2] || 0) + h1W;
                         stats[h1].lossesVs[h2] = (stats[h1].lossesVs[h2] || 0) + h2W;
 
@@ -1188,7 +1246,9 @@ function toggleEdit(page) {
                     if (details.standings) {
                         details.standings.forEach((st, idx) => {
                             let tName = st.team.trim();
-                            if (!stats[tName]) return;
+                            if (!stats[tName]) {
+                                stats[tName] = { championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: [], status: "active", worstRank: -1, bestRegRank: Infinity, winsVs: {}, lossesVs: {} };
+                            }
 
                             stats[tName].seasonsPlayed += 1;
                             let rank = idx + 1;
@@ -1232,14 +1292,42 @@ function toggleEdit(page) {
             return Object.keys(stats).map(team => {
                 let data = stats[team];
                 
-                let maxL = 0, nemesis = "-";
+                // Nemesis calculation (Most losses against)
+                let maxL = 0;
+                let nemesisList = [];
                 for (let opp in data.lossesVs) {
-                    if (data.lossesVs[opp] > maxL) { maxL = data.lossesVs[opp]; nemesis = opp; }
+                    let val = data.lossesVs[opp];
+                    if (val > maxL) {
+                        maxL = val;
+                        nemesisList = [opp];
+                    } else if (val === maxL && val > 0) {
+                        nemesisList.push(opp);
+                    }
+                }
+                let nemesisStr = "-";
+                if (nemesisList.length === 1) {
+                    nemesisStr = formatNameWithBanner(nemesisList[0]);
+                } else if (nemesisList.length > 1) {
+                    nemesisStr = `Many (${nemesisList.length})`;
                 }
 
-                let maxW = 0, victim = "-";
+                // Victim calculation (Most wins against)
+                let maxW = 0;
+                let victimList = [];
                 for (let opp in data.winsVs) {
-                    if (data.winsVs[opp] > maxW) { maxW = data.winsVs[opp]; victim = opp; }
+                    let val = data.winsVs[opp];
+                    if (val > maxW) {
+                        maxW = val;
+                        victimList = [opp];
+                    } else if (val === maxW && val > 0) {
+                        victimList.push(opp);
+                    }
+                }
+                let victimStr = "-";
+                if (victimList.length === 1) {
+                    victimStr = formatNameWithBanner(victimList[0]);
+                } else if (victimList.length > 1) {
+                    victimStr = `Many (${victimList.length})`;
                 }
 
                 const ordinal = (n) => {
@@ -1276,8 +1364,8 @@ function toggleEdit(page) {
                     playoffApps: data.playoffApps,
                     champApps: (data.hasWonChamp || data.hasLostChamp ? 1 : 0),
                     champSeasons: data.champSeasons.length > 0 ? data.champSeasons.join(', ') : '-',
-                    nemesis: formatNameWithBanner(nemesis),
-                    victim: formatNameWithBanner(victim),
+                    nemesis: nemesisStr,
+                    victim: victimStr,
                     bestFinish: `<strong style="color:${bestColor};">${bestStr}</strong>`,
                     worstFinish: `<strong style="color:var(--text-main);">${ordinal(data.worstRank)}</strong>`,
                     status: data.status === 'exiled to Essos' ? '<em>exiled to Essos</em>' : data.status
@@ -1910,26 +1998,18 @@ function toggleEdit(page) {
             const matrixContainer = document.getElementById('matchups-matrix-container');
             const filterContainer = document.getElementById('matchup-filter-container');
             const availableTeams = getAvailableTeams();
-// Populate the house filter dropdown dynamically
+
             const filterSelect = document.getElementById('matchup-house-filter');
             if (filterSelect) {
                 const currentVal = filterSelect.value;
                 let houses = new Set();
-                
-                // Pulls teams from your overall league standings/houses list
                 availableTeams.forEach(t => houses.add(t.trim()));
-                
-                // (Optional alternative) If you only want teams that have specific matchup cards:
-                // realmData.matchups.forEach(m => {
-                //     if (m.house) houses.add(m.house.trim());
-                //     if (m.opposingHouse) houses.add(m.opposingHouse.trim());
-                // });
-
                 let sortedHouses = Array.from(houses).sort();
                 filterSelect.innerHTML = '<option value="">All Houses</option>' + sortedHouses.map(h => `
                     <option value="${h}" ${currentVal === h ? 'selected' : ''}>${h}</option>
                 `).join('');
             }
+
             const isEditing = editModes.matchups;
             document.getElementById('btn-add-matchup').style.display = isEditing ? 'inline-block' : 'none';
             document.getElementById('btn-save-matchups').style.display = isEditing ? 'inline-block' : 'none';
@@ -2027,6 +2107,7 @@ function toggleEdit(page) {
                         `;
                     }
                 }).join('');
+                filterMatchups();
             } else {
                 grid.style.display = 'none';
                 matrixContainer.style.display = 'block';
