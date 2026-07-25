@@ -1040,7 +1040,16 @@
                 } else if (pwd !== null) alert("Incorrect password!");
             }
         }
-
+function toggleEdit(page) {
+            if (page === 'teams') editModes.teams = !editModes.teams;
+            else if (page === 'matchups') editModes.matchups = !editModes.matchups;
+            else if (page === 'current-edit') editModes.currentSeason = !editModes.currentSeason;
+            else if (page.startsWith('past-season-')) {
+                let yr = page.replace('past-season-', '');
+                editModes.pastSeason = editModes.pastSeason === yr ? null : yr;
+            }
+            renderData();
+        }
         async function deleteSeason(year) {
             if (!confirm(`Are you sure you want to completely delete the ${year} season? This action cannot be undone.`)) return;
 
