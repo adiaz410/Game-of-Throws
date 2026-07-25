@@ -1100,9 +1100,50 @@
             else if (page === 'current-edit') editModes.currentSeason = !editModes.currentSeason;
             else if (page.startsWith('past-season-')) {
                 let yr = page.replace('past-season-', '');
-                editModes.pastSeason = editModes.pastSeason === yr ? null : yr;
+                if (editModes.pastSeason === yr) {
+                    // Save changes when closing the editor
+                    savePastSeasonForm(yr);
+                } else {
+                    editModes.pastSeason = yr;
+                }
             }
             renderData();
+        }
+
+        function savePastSeasonForm(yr) {
+            const section = document.getElementById(`past-season-${yr}`);
+            if (!section) return;
+
+            if (!realmData.pastSeasonDetails[yr]) {
+                realmData.pastSeasonDetails[yr] = yr === "2023" ? JSON.parse(JSON.stringify(specific2023Template)) : JSON.parse(JSON.stringify(standardSeasonTemplate));
+            }
+            const details = realmData.pastSeasonDetails[yr];
+
+            const inputs = section.querySelectorAll('.past-season-input');
+            inputs.forEach(input => {
+                const type = input.getAttribute('data-ps-type');
+                const idx = parseInt(input.getAttribute('data-ps-index'));
+                const field = input.getAttribute('data-ps-field');
+
+                if (type === 'standings') {
+                    if (details.standings[idx]) {
+                        details.standings[idx][field] = (field === 'w' || field === 'l' || field === 'pts' || field === 'against') ? parseFloat(input.value) || 0 : input.value;
+                    }
+                } else if (type === 'qf') {
+                    if (details.quarterfinals[idx]) details.quarterfinals[idx][field] = field === 'winner' ? parseInt(input.value) : input.value;
+                } else if (type === 'sf') {
+                    if (details.semifinals[idx]) details.semifinals[idx][field] = field === 'winner' ? parseInt(input.value) : input.value;
+                } else if (type === 'tp') {
+                    if (details.thirdPlaceGame) details.thirdPlaceGame[field] = field === 'winner' ? parseInt(input.value) : input.value;
+                } else if (type === 'champ') {
+                    details.championship[field] = field === 'winner' ? parseInt(input.value) : input.value;
+                }
+            });
+
+            if (details.standings) sortStandingsArray(details.standings);
+            syncBracketData(details);
+            saveRealmData(realmData);
+            editModes.pastSeason = null;
         }
 
         async function deleteSeason(year) {
