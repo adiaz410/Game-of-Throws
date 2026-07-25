@@ -107,7 +107,7 @@
             display: none;
             position: absolute;
             background-color: var(--bg-panel);
-            min-width: 180px;
+            min-width: 200px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             border: 1px solid var(--border-gold);
             z-index: 200;
@@ -433,6 +433,27 @@
             margin-bottom: 0.3rem;
         }
 
+        /* Medal Trophy Case Styles */
+        .medal-trophy-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .medal-trophy-item {
+            background: #111318;
+            border: 1px solid #2c2f3b;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
         .bracket-container {
             display: flex;
             justify-content: space-around;
@@ -599,11 +620,16 @@
     </header>
 
     <nav>
-        <button class="nav-btn" onclick="switchPage('rankings')">Rankings</button>
-        <button class="nav-btn" onclick="switchPage('teams')">Teams</button>
-        <button class="nav-btn" onclick="switchPage('matchups')">Matchups</button>
-        <button class="nav-btn" onclick="switchPage('standings')">Standings</button>
-        
+        <!-- Nested Teams Dropdown -->
+        <div class="dropdown">
+            <button class="dropdown-toggle" id="teams-menu-tab">Teams ▾</button>
+            <div class="dropdown-content">
+                <button onclick="switchPage('teams')">Houses Directory</button>
+                <button onclick="switchPage('rankings')">Prestige Rankings</button>
+                <button onclick="switchPage('team-profiles')">Team Profiles</button>
+            </div>
+        </div>
+
         <!-- Nested Current Season Dropdown -->
         <div class="dropdown">
             <button class="dropdown-toggle" id="current-season-tab">Current Season ▾</button>
@@ -613,9 +639,18 @@
             </div>
         </div>
 
-        <button class="nav-btn" onclick="switchPage('seasons')">History</button>
-        <button class="nav-btn" onclick="switchPage('champions')">Hall of Champions</button>
-        <button class="nav-btn" onclick="switchPage('accolades')">Accolades</button>
+        <!-- Nested History Dropdown -->
+        <div class="dropdown">
+            <button class="dropdown-toggle" id="history-tab">History ▾</button>
+            <div class="dropdown-content">
+                <button onclick="switchPage('matchups')">Matchups</button>
+                <button onclick="switchPage('standings')">Standings</button>
+                <button onclick="switchPage('seasons')">Season Chronicles</button>
+                <button onclick="switchPage('champions')">Hall of Champions</button>
+                <button onclick="switchPage('accolades')">Accolades</button>
+            </div>
+        </div>
+
         <div class="dropdown">
             <button class="dropdown-toggle" id="past-seasons-tab">Past Seasons ▾</button>
             <div class="dropdown-content" id="past-seasons-dropdown"></div>
@@ -754,7 +789,7 @@
         <!-- RANKINGS PAGE -->
         <section id="rankings" class="page">
             <div class="page-header">
-                <h2>Realm Power Rankings</h2>
+                <h2>Realm Prestige Rankings</h2>
             </div>
             <div class="points-rule-box">
                 📜 House Prestige: 1st: 5 pts | 2nd: 2 pts | 3rd: 1.5 pts | Playoff app: 0.5 pts | Best Reg Season Record: 1 pt | Most Reg Season points: 1 pt | and for Last: -1 pt
@@ -812,6 +847,22 @@
                     </thead>
                     <tbody id="teams-body"></tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- TEAM PROFILES PAGE -->
+        <section id="team-profiles" class="page">
+            <div class="page-header">
+                <h2>House Profiles</h2>
+                <div class="action-btn-group">
+                    <select id="profile-house-select" onchange="renderTeamProfile()" style="background:#0c0d10; border:1px solid var(--border-gold); color:var(--text-main); padding:0.4rem 0.8rem; font-family:'Cinzel',serif;">
+                        <!-- Dynamically populated houses -->
+                    </select>
+                </div>
+            </div>
+
+            <div id="team-profile-content">
+                <!-- In-depth profile content rendered here -->
             </div>
         </section>
 
@@ -1210,7 +1261,6 @@
                     let ownerName = userMap[r.owner_id] || `Roster #${r.roster_id}`;
                     let currentAssigned = realmData.sleeperMappings[r.roster_id] || "";
 
-                    // Auto-match suggestion if not mapped
                     if (!currentAssigned && realmData.currentSeason && realmData.currentSeason.standings) {
                         let ownerLower = ownerName.toLowerCase();
                         let found = realmData.currentSeason.standings.find(st => {
@@ -1348,6 +1398,9 @@
             switchPage('current-season');
         }
 
+        const teamsPages = ['teams', 'rankings', 'team-profiles'];
+        const historyPages = ['matchups', 'standings', 'seasons', 'champions', 'accolades'];
+
         function switchPage(pageId) {
             activePageId = pageId;
             window.location.hash = `#/${pageId}`;
@@ -1363,6 +1416,10 @@
                 document.getElementById('past-seasons-tab').classList.add('active');
             } else if (pageId === 'current-season' || pageId === 'sleeper-matchups') {
                 document.getElementById('current-season-tab').classList.add('active');
+            } else if (teamsPages.includes(pageId)) {
+                document.getElementById('teams-menu-tab').classList.add('active');
+            } else if (historyPages.includes(pageId)) {
+                document.getElementById('history-tab').classList.add('active');
             } else {
                 const btn = document.querySelector(`nav button[onclick*="'${pageId}'"]`);
                 if (btn) btn.classList.add('active');
@@ -1370,6 +1427,8 @@
 
             if (pageId === 'sleeper-matchups') {
                 loadSleeperMatchups();
+            } else if (pageId === 'team-profiles') {
+                initTeamProfileDropdown();
             }
         }
 
@@ -1597,16 +1656,6 @@
                 });
             }
 
-            if (realmData.currentSeason && realmData.currentSeason.standings) {
-                realmData.currentSeason.standings.forEach(st => {
-                    let tName = st.team.trim();
-                    let matchedKey = Object.keys(stats).find(k => k.toLowerCase() === tName.toLowerCase());
-                    if (!matchedKey) { stats[tName] = { wins: 0, losses: 0 }; matchedKey = tName; }
-                    stats[matchedKey].wins += (st.w || 0);
-                    stats[matchedKey].losses += (st.l || 0);
-                });
-            }
-
             return Object.keys(stats).map(team => {
                 let data = stats[team];
                 let totalGames = data.wins + data.losses;
@@ -1650,10 +1699,6 @@
                     const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[season.year] : null;
                     processPlayoffs(details);
                 });
-            }
-
-            if (realmData.currentSeason && areAllTeams14Games(realmData.currentSeason)) {
-                processPlayoffs(realmData.currentSeason);
             }
 
             return Object.keys(stats).map(team => {
@@ -2928,8 +2973,246 @@
             `;
         }
 
+        function initTeamProfileDropdown() {
+            const select = document.getElementById('profile-house-select');
+            if (!select) return;
+            const availableTeams = getAvailableTeams();
+            const currentVal = select.value;
+
+            select.innerHTML = availableTeams.map(t => `<option value="${t}" ${currentVal === t ? 'selected' : ''}>${t}</option>`).join('');
+            renderTeamProfile();
+        }
+
+        function renderTeamProfile() {
+            const select = document.getElementById('profile-house-select');
+            const container = document.getElementById('team-profile-content');
+            if (!select || !container) return;
+
+            const selectedTeam = select.value;
+            if (!selectedTeam) {
+                container.innerHTML = `<p style="color:var(--text-muted);">Please select a house.</p>`;
+                return;
+            }
+
+            const allStats = calculateTeamStats();
+            const teamStat = allStats.find(s => s.rawTeam.toLowerCase() === selectedTeam.toLowerCase()) || {
+                championships: 0, seasonsPlayed: 0, playoffApps: 0, champApps: 0, champSeasons: '-', nemesis: '-', victim: '-', bestFinish: '-', worstFinish: '-', status: 'active'
+            };
+
+            let timelineHtml = '';
+            let goldMedals = 0;
+            let silverMedals = 0;
+            let bronzeMedals = 0;
+
+            if (realmData.seasons) {
+                realmData.seasons.forEach(season => {
+                    const yr = season.year;
+                    const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[yr] : null;
+                    if (!details) return;
+
+                    let seasonRank = "-";
+                    let recordStr = "-";
+                    let finishLabel = "Missed Playoffs";
+                    let finishColor = "var(--text-muted)";
+
+                    if (details.standings) {
+                        let stIdx = details.standings.findIndex(st => st.team.trim().toLowerCase() === selectedTeam.toLowerCase());
+                        if (stIdx !== -1) {
+                            seasonRank = `#${stIdx + 1}`;
+                            recordStr = `${details.standings[stIdx].w}-${details.standings[stIdx].l}`;
+                        }
+                    }
+
+                    let playoffTeams = new Set();
+                    if (details.byes) details.byes.forEach(b => { if (b.team) playoffTeams.add(b.team.trim().toLowerCase()); });
+                    if (details.quarterfinals) details.quarterfinals.forEach(q => { if (q.t1) playoffTeams.add(q.t1.trim().toLowerCase()); if (q.t2) playoffTeams.add(q.t2.trim().toLowerCase()); });
+                    if (details.semifinals) details.semifinals.forEach(sf => { if (sf.t1) playoffTeams.add(sf.t1.trim().toLowerCase()); if (sf.t2) playoffTeams.add(sf.t2.trim().toLowerCase()); });
+
+                    if (playoffTeams.has(selectedTeam.toLowerCase())) {
+                        finishLabel = "Appearance";
+                        finishColor = "var(--text-main)";
+                    }
+
+                    if (details.thirdPlaceGame && (details.thirdPlaceGame.winner === 1 || details.thirdPlaceGame.winner === 2)) {
+                        let tpWinner = details.thirdPlaceGame.winner === 2 ? details.thirdPlaceGame.t2 : details.thirdPlaceGame.t1;
+                        let tpLoser = details.thirdPlaceGame.winner === 2 ? details.thirdPlaceGame.t1 : details.thirdPlaceGame.t2;
+
+                        if (tpWinner.toLowerCase() === selectedTeam.toLowerCase()) {
+                            bronzeMedals++;
+                            finishLabel = "3rd";
+                            finishColor = "#cd7f32";
+                        } else if (tpLoser.toLowerCase() === selectedTeam.toLowerCase()) {
+                            finishLabel = "4th";
+                            finishColor = "var(--text-main)";
+                        }
+                    }
+
+                    if (details.championship && (details.championship.winner === 1 || details.championship.winner === 2)) {
+                        let champ = details.championship.winner === 2 ? details.championship.t2 : details.championship.t1;
+                        let runner = details.championship.winner === 2 ? details.championship.t1 : details.championship.t2;
+
+                        if (champ.toLowerCase() === selectedTeam.toLowerCase()) {
+                            goldMedals++;
+                            finishLabel = "1st";
+                            finishColor = "#ffd700";
+                        } else if (runner.toLowerCase() === selectedTeam.toLowerCase()) {
+                            silverMedals++;
+                            finishLabel = "2nd";
+                            finishColor = "#c0c0c0";
+                        }
+                    }
+
+                    timelineHtml += `
+                        <tr>
+                            <td><strong>${yr}</strong></td>
+                            <td>${seasonRank}</td>
+                            <td>${recordStr}</td>
+                            <td><strong style="color:${finishColor};">${finishLabel}</strong></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            let trophiesHtml = '';
+            for (let i = 0; i < goldMedals; i++) {
+                trophiesHtml += `<div class="medal-trophy-item"><span style="font-size:2rem;">🥇</span><span style="font-size:0.8rem; font-family:'Cinzel',serif; color:var(--border-gold);">Championship (1st)</span></div>`;
+            }
+            for (let i = 0; i < silverMedals; i++) {
+                trophiesHtml += `<div class="medal-trophy-item"><span style="font-size:2rem;">🥈</span><span style="font-size:0.8rem; font-family:'Cinzel',serif; color:#c0c0c0;">Runner-Up (2nd)</span></div>`;
+            }
+            for (let i = 0; i < bronzeMedals; i++) {
+                trophiesHtml += `<div class="medal-trophy-item"><span style="font-size:2rem;">🥉</span><span style="font-size:0.8rem; font-family:'Cinzel',serif; color:#cd7f32;">Third Place (3rd)</span></div>`;
+            }
+
+            if (!trophiesHtml) {
+                trophiesHtml = `<p style="color:var(--text-muted); font-style:italic;">No podium finishes claimed yet in the realm.</p>`;
+            }
+
+            container.innerHTML = `
+                <div style="background:var(--bg-panel); border:1px solid var(--border-gold); padding:2rem; margin-bottom:2rem; box-shadow:0 8px 16px rgba(0,0,0,0.5);">
+                    <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+                        <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); font-size:1.8rem; margin:0;">${formatNameWithBanner(selectedTeam)}</h3>
+                    </div>
+
+                    <h4 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem; border-bottom:1px solid #2c2f3b; padding-bottom:0.4rem;">House Statistics Overview</h4>
+                    <div class="table-container" style="margin-bottom:2rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Championships</th>
+                                    <th>Seasons Played</th>
+                                    <th>Playoff Apps</th>
+                                    <th>Champ Apps</th>
+                                    <th>Nemesis</th>
+                                    <th>Victim</th>
+                                    <th>Best Finish</th>
+                                    <th>Worst Finish</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong style="color:var(--border-gold);">${teamStat.championships}</strong></td>
+                                    <td>${teamStat.seasonsPlayed}</td>
+                                    <td>${teamStat.playoffApps}</td>
+                                    <td>${teamStat.champApps}</td>
+                                    <td>${teamStat.nemesis}</td>
+                                    <td>${teamStat.victim}</td>
+                                    <td>${teamStat.bestFinish}</td>
+                                    <td>${teamStat.worstFinish}</td>
+                                    <td>${teamStat.status}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem; border-bottom:1px solid #2c2f3b; padding-bottom:0.4rem;">Trophy Case</h4>
+                    <div class="medal-trophy-grid" style="margin-bottom:2rem;">
+                        ${trophiesHtml}
+                    </div>
+
+                    <h4 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem; border-bottom:1px solid #2c2f3b; padding-bottom:0.4rem;">Timeline of Season Finishes</h4>
+                    <div class="table-container" style="margin-bottom:0;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Year</th>
+                                    <th>Reg. Season Rank</th>
+                                    <th>Record (W-L)</th>
+                                    <th>Postseason Finish</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${timelineHtml || '<tr><td colspan="4">No historical season timelines recorded.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function updateCurrentSeasonFromSleeper() {
+            const leagueId = realmData.sleeperLeagueId;
+            if (!leagueId || !realmData.currentSeason) return;
+
+            try {
+                const [usersRes, rostersRes] = await Promise.all([
+                    fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
+                    fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`)
+                ]);
+
+                if (!usersRes.ok || !rostersRes.ok) return;
+                const users = await usersRes.json();
+                const rosters = await rostersRes.json();
+
+                let userMap = {};
+                users.forEach(u => { userMap[u.user_id] = u.display_name || u.username; });
+
+                let updatedStandings = [];
+
+                rosters.forEach(r => {
+                    let sleeperOwnerName = userMap[r.owner_id] || `Roster #${r.roster_id}`;
+                    let assignedHouse = realmData.sleeperMappings ? realmData.sleeperMappings[r.roster_id] : null;
+
+                    if (!assignedHouse) {
+                        let ownerLower = sleeperOwnerName.toLowerCase();
+                        let found = realmData.currentSeason.standings.find(st => {
+                            let teamStr = st.team.toLowerCase();
+                            let ownerStr = (st.owner || "").toLowerCase();
+                            return teamStr.includes(ownerLower) || ownerStr.includes(ownerLower);
+                        });
+                        assignedHouse = found ? found.team : sleeperOwnerName;
+                    }
+
+                    let w = r.settings.wins || 0;
+                    let l = r.settings.losses || 0;
+                    let pts = Number(`${r.settings.fpts || 0}.${r.settings.fpts_decimal || 0}`) || 0;
+                    let against = Number(`${r.settings.fpts_against || 0}.${r.settings.fpts_against_decimal || 0}`) || 0;
+
+                    updatedStandings.push({
+                        team: assignedHouse,
+                        owner: sleeperOwnerName,
+                        w: w,
+                        l: l,
+                        pts: pts,
+                        against: against
+                    });
+                });
+
+                sortStandingsArray(updatedStandings);
+                realmData.currentSeason.standings = updatedStandings;
+                await saveRealmData(realmData);
+            } catch (err) {
+                console.error("Could not sync Sleeper standings:", err);
+            }
+        }
+
         function renderData() {
             sortDataNewestToOldest();
+
+            if (realmData.sleeperLeagueId) {
+                updateCurrentSeasonFromSleeper();
+            }
 
             const allRankings = calculateRankings();
             document.getElementById('rankings-body').innerHTML = allRankings.map((row) => `
@@ -3154,10 +3437,8 @@
                 rosters.forEach(r => {
                     let sleeperOwnerName = userMap[r.owner_id] || `Roster #${r.roster_id}`;
                     
-                    // Priority 1: Use explicit manual mapping
                     let assignedHouse = realmData.sleeperMappings ? realmData.sleeperMappings[r.roster_id] : null;
 
-                    // Priority 2: Fallback to auto-matching if unmapped
                     if (!assignedHouse && realmData.currentSeason && realmData.currentSeason.standings) {
                         let ownerLower = sleeperOwnerName.toLowerCase();
                         let found = realmData.currentSeason.standings.find(st => {
@@ -3168,7 +3449,6 @@
                         if (found) assignedHouse = found.team;
                     }
 
-                    // Priority 3: Fallback to Sleeper owner name
                     rosterToHouse[r.roster_id] = assignedHouse || sleeperOwnerName;
                 });
 
