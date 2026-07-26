@@ -107,7 +107,7 @@
             display: none;
             position: absolute;
             background-color: var(--bg-panel);
-            min-width: 200px;
+            min-width: 220px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             border: 1px solid var(--border-gold);
             z-index: 200;
@@ -271,7 +271,7 @@
             background: rgba(255,255,255,0.02);
         }
 
-        td input, td select, .edit-form-container input, .edit-form-container select, .past-season-input, .current-season-input, .duel-card input, .duel-card select {
+        td input, td select, .edit-form-container input, .edit-form-container select, .past-season-input, .current-season-input, .duel-card input, .duel-card select, textarea {
             background: #0c0d10;
             border: 1px solid #2c2f3b;
             color: var(--text-main);
@@ -281,7 +281,7 @@
             width: 100%;
         }
 
-        td input:focus, td select:focus, .edit-form-container input:focus, .edit-form-container select:focus, .past-season-input:focus, .current-season-input:focus, .duel-card input:focus, .duel-card select:focus {
+        td input:focus, td select:focus, .edit-form-container input:focus, .edit-form-container select:focus, .past-season-input:focus, .current-season-input:focus, .duel-card input:focus, .duel-card select:focus, textarea:focus {
             outline: none;
             border-color: var(--border-gold);
         }
@@ -325,16 +325,27 @@
             margin-bottom: 2rem;
         }
 
+        /* Matchup Card Styling with Unified Parchment & Metal Crest Feel */
         .duel-card {
-            background: var(--bg-panel);
+            background: linear-gradient(145deg, #16181e 0%, #0d0f14 100%);
             border: 1px solid #2c2f3b;
-            border-top: 2px solid var(--border-gold);
+            border-top: 3px solid var(--border-gold);
             padding: 1.5rem;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
             gap: 1rem;
             position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .duel-card.leader-left {
+            box-shadow: 0 0 18px rgba(197, 160, 89, 0.22), 0 10px 20px rgba(0,0,0,0.6);
+            border-color: rgba(197, 160, 89, 0.5);
+        }
+        .duel-card.leader-right {
+            box-shadow: 0 0 18px rgba(197, 160, 89, 0.22), 0 10px 20px rgba(0,0,0,0.6);
+            border-color: rgba(197, 160, 89, 0.5);
         }
 
         .bowl-title {
@@ -353,32 +364,150 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #2c2f3b;
-            padding-bottom: 0.6rem;
+            padding-bottom: 0.7rem;
         }
 
         .duel-house {
             font-family: 'Cinzel', serif;
             color: var(--border-gold);
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 700;
         }
 
         .duel-vs {
             font-family: 'Cinzel', serif;
             color: var(--text-muted);
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
 
-        .duel-stats {
+        /* 3-Column Compact Micro-Grid for Stats */
+        .duel-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            text-align: center;
+            gap: 0.4rem;
+            background: #0f1115;
+            padding: 0.8rem 0.5rem;
+            border: 1px solid #2c2f3b;
+            border-radius: 2px;
+        }
+
+        .stat-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .stat-col:not(:last-child) {
+            border-right: 1px solid #2c2f3b;
+        }
+
+        .stat-col-header {
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #2c2f3b;
+            padding-bottom: 0.2rem;
+        }
+
+        .stat-val-row {
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.95rem;
+            font-family: 'Lora', serif;
+            font-weight: bold;
+        }
+
+        /* Collapsible Breakdown Details */
+        .duel-details-container {
+            display: none;
+            flex-direction: column;
+            gap: 0.8rem;
+            animation: fadeIn 0.3s ease;
+            background: #0c0d10;
+            padding: 1rem;
+            border: 1px solid #2c2f3b;
+            border-radius: 2px;
+        }
+
+        .duel-card.expanded .duel-details-container {
+            display: flex;
+        }
+
+        .expand-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--border-gold);
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-align: center;
+            letter-spacing: 1px;
+            padding: 0.3rem 0;
+            transition: color 0.2s;
+        }
+
+        .expand-toggle-btn:hover {
+            color: #ffd700;
+        }
+
+        /* Filter Pills Styling */
+        .filter-pills-container {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-pill {
+            background: var(--bg-panel);
+            border: 1px solid #2c2f3b;
+            color: var(--text-muted);
+            padding: 0.4rem 1rem;
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .filter-pill:hover, .filter-pill.active {
+            color: var(--border-gold);
+            border-color: var(--border-gold);
+            background: rgba(197, 160, 89, 0.08);
+        }
+
+        .player-breakdown-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            text-align: center;
-            gap: 0.5rem;
-            background: #111318;
-            padding: 0.8rem;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .player-list {
+            background: #0c0d10;
             border: 1px solid #2c2f3b;
+            padding: 0.5rem;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .player-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.2rem 0;
+            border-bottom: 1px solid #1c202a;
+        }
+
+        .player-row:last-child {
+            border-bottom: none;
         }
 
         .matrix-table {
@@ -433,7 +562,6 @@
             margin-bottom: 0.3rem;
         }
 
-        /* Medal Trophy Case Styles */
         .medal-trophy-grid {
             display: flex;
             flex-wrap: wrap;
@@ -620,6 +748,10 @@
     </header>
 
     <nav>
+        <!-- Far Left: Maester's Gazette & League ByLaws -->
+        <button class="nav-btn" onclick="switchPage('maesters-gazette')">Maester's Gazette</button>
+        <button class="nav-btn" onclick="switchPage('constitution')">League ByLaws</button>
+
         <!-- Nested Teams Dropdown -->
         <div class="dropdown">
             <button class="dropdown-toggle" id="teams-menu-tab">Teams ▾</button>
@@ -635,7 +767,7 @@
             <button class="dropdown-toggle" id="current-season-tab">Current Season ▾</button>
             <div class="dropdown-content">
                 <button onclick="switchPage('current-season')">Standings & Bracket</button>
-                <button onclick="switchPage('sleeper-matchups')">Live Scoreboard</button>
+                <button onclick="switchPage('sleeper-matchups')">Weekly Scores</button>
             </div>
         </div>
 
@@ -672,6 +804,107 @@
                             <li>Thou shall do their own research</li>
                             <li>Thou shall keep up with league rules and responsibilities</li>
                             <li>Thou shall play the full season once committed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAESTER'S GAZETTE PAGE (EDITABLE) -->
+        <section id="maesters-gazette" class="page">
+            <div class="page-header">
+                <h2>The Maester's Gazette</h2>
+                <div class="action-btn-group">
+                    <button class="action-btn" onclick="requestPassword('gazette-edit')" id="btn-gazette-edit">⚙️ Edit Gazette</button>
+                </div>
+            </div>
+            
+            <div id="gazette-edit-container" class="edit-form-container">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Publish Gazette Entry</h3>
+                <div style="margin-bottom:1rem;">
+                    <label style="font-family:'Cinzel',serif; color:var(--border-gold); display:block; margin-bottom:0.3rem;">Dispatch Title</label>
+                    <input type="text" id="gazette-title-input" placeholder="Title of Dispatch">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label style="font-family:'Cinzel',serif; color:var(--border-gold); display:block; margin-bottom:0.3rem;">Chronicler / Author</label>
+                    <input type="text" id="gazette-author-input" placeholder="Grand Maester">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label style="font-family:'Cinzel',serif; color:var(--border-gold); display:block; margin-bottom:0.3rem;">Gazette Content</label>
+                    <textarea id="gazette-content-input" rows="6" placeholder="Write chronicle here..."></textarea>
+                </div>
+                <button class="action-btn" onclick="saveGazette()" style="background:var(--border-gold); color:var(--bg-dark);">💾 Publish Dispatch</button>
+            </div>
+
+            <div id="gazette-display-container"></div>
+        </section>
+
+        <!-- LEAGUE BYLAWS PAGE (UPDATED) -->
+        <section id="constitution" class="page">
+            <div class="page-header">
+                <h2>League ByLaws & Realm Law</h2>
+            </div>
+            <div class="medieval-slab" style="padding: 2.5rem; margin-bottom: 2rem; text-align: left;">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1.5rem; text-align: center;">Decrees of the High Council</h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 1.5rem; font-family:'Lora',serif; line-height: 1.7;">
+                    <div>
+                        <strong style="font-family:'Cinzel',serif; color:var(--border-gold);">I. The Houses & Re-Draft Covenant</strong>
+                        <p>The realm shall consist of 12 noble houses in re-draft combat (harking back to 10 houses in the year of 2023). If a House decides to forfeit their seat in the realm, they must notify the council swiftly so a worthy successor can fill their lands.</p>
+                        <p style="margin-top:0.3rem; font-style:italic; color:var(--text-muted);">Co-management of a house is fully accepted—this realm is a safe haven for collective rule.</p>
+                    </div>
+
+                    <div>
+                        <strong style="font-family:'Cinzel',serif; color:var(--border-gold);">II. The Scoring Grimoire</strong>
+                        <p>Battles shall be judged on a Point-Per-Reception (PPR) scoring system:</p>
+                        <ul style="padding-left: 1.5rem; margin-top: 0.3rem;">
+                            <li>Passing Touchdown: 4 points</li>
+                            <li>Receiving or Rushing Touchdown: 6 points</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <strong style="font-family:'Cinzel',serif; color:var(--border-gold);">III. Composition of War Rosters</strong>
+                        <p>Every active lineup must deploy: 1 QB, 2 RB, 3 WR, 1 TE, 1 FLEX, 1 K, and 1 Def.</p>
+                        <ul style="padding-left: 1.5rem; margin-top: 0.3rem;">
+                            <li>Maximum limits: 6 WRs max, 5 RBs max</li>
+                            <li>Bench capacity: 6 spots total</li>
+                            <li>Infirmary (IR): 2 slots. Suspended warriors are strictly barred from the IR. Any player deemed ineligible for IR must be cast out immediately (app restrictions apply).</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <strong style="font-family:'Cinzel',serif; color:var(--border-gold);">IV. Treasury & Waivers (FAAB)</strong>
+                        <p>Acquisitions from the free agent pool are governed by a Free Agency Acquisition Budget (FAAB):</p>
+                        <ul style="padding-left: 1.5rem; margin-top: 0.3rem;">
+                            <li>Max war chest: $130 | Minimum transaction bid: $4 | Maximum total waiver adds: 30</li>
+                            <li>Waivers process each Wednesday following the week of action.</li>
+                            <li>No warriors may be claimed once their battle has commenced or mid-game until waivers clear. No pickups allowed prior to the dawn of Week 1.</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <strong style="font-family:'Cinzel',serif; color:var(--border-gold);">V. The Postseason & Iron Throne</strong>
+                        <p>6 houses shall advance to the postseason tournament. The top 2 houses secure first-round byes. The highest seed will always go against the lowest seeded matchup until the final. All playoff battles span 1 week.</p>
+                    </div>
+
+                    <div>
+                        <strong style="font-family:'Cinzel',serif; color:var(--border-gold);">VI. Trade Diplomacy</strong>
+                        <p>The trade deadline falls upon the Saturday following Week 10. All approved trades pass automatically, but trades on game days are forbidden (auto-vetoed until the next peaceful non-gameday).</p>
+                    </div>
+
+                    <div>
+                        <strong style="font-family:'Cinzel',serif; color:var(--border-gold);">VII. Amendments & Royal Decree</strong>
+                        <p>Any alterations to realm law require a majority vote of 7 or more lords of the realm.</p>
+                    </div>
+
+                    <div>
+                        <strong style="font-family:'Cinzel',serif; color:var(--border-gold);">VIII. Tribute & Payouts</strong>
+                        <p>Yearly tribute stands at $150 per House (established August 2020), subject to levies for live draft feasts and relics. Payouts distributed as follows:</p>
+                        <ul style="padding-left: 1.5rem; margin-top: 0.3rem;">
+                            <li>1st Place (The Crown): $850</li>
+                            <li>2nd Place (Hand of the King): $250</li>
+                            <li>Weekly High Scorer Bounties (14 weeks): $50 each</li>
                         </ul>
                     </div>
                 </div>
@@ -743,17 +976,14 @@
         <!-- SLEEPER LIVE MATCHUPS PAGE -->
         <section id="sleeper-matchups" class="page">
             <div class="page-header">
-                <h2>Live Scoreboard</h2>
+                <h2>Weekly Scores & Player Breakdowns</h2>
                 <div class="action-btn-group">
-                    <select id="sleeper-week-select" onchange="loadSleeperMatchups()" style="background:#0c0d10; border:1px solid var(--border-gold); color:var(--text-main); padding:0.4rem 0.8rem; font-family:'Cinzel',serif;">
-                        <!-- Dynamically populated weeks 1 to 14 -->
-                    </select>
+                    <select id="sleeper-week-select" onchange="loadSleeperMatchups()" style="background:#0c0d10; border:1px solid var(--border-gold); color:var(--text-main); padding:0.4rem 0.8rem; font-family:'Cinzel',serif;"></select>
                     <button class="action-btn" onclick="loadSleeperMatchups()">🔄 Refresh Scores</button>
                     <button class="action-btn" id="btn-sleeper-settings" onclick="requestPassword('sleeper-settings')">⚙️ Settings</button>
                 </div>
             </div>
 
-            <!-- Sleeper League ID & User Mapping Edit Container -->
             <div id="sleeper-settings-container" class="edit-form-container">
                 <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Configure Sleeper Integration</h3>
                 
@@ -780,9 +1010,8 @@
                 </div>
             </div>
 
-            <!-- Live Scoreboard Matchups Grid -->
             <div class="matchups-grid" id="sleeper-matchups-grid">
-                <p style="color: var(--text-muted); font-style: italic;">Configure your Sleeper League ID using the settings button above to load live matchups.</p>
+                <p style="color: var(--text-muted); font-style: italic;">Configure your Sleeper League ID using the settings button above to load weekly matchups.</p>
             </div>
         </section>
 
@@ -855,15 +1084,11 @@
             <div class="page-header">
                 <h2>House Profiles</h2>
                 <div class="action-btn-group">
-                    <select id="profile-house-select" onchange="renderTeamProfile()" style="background:#0c0d10; border:1px solid var(--border-gold); color:var(--text-main); padding:0.4rem 0.8rem; font-family:'Cinzel',serif;">
-                        <!-- Dynamically populated houses -->
-                    </select>
+                    <select id="profile-house-select" onchange="renderTeamProfile()" style="background:#0c0d10; border:1px solid var(--border-gold); color:var(--text-main); padding:0.4rem 0.8rem; font-family:'Cinzel',serif;"></select>
                 </div>
             </div>
 
-            <div id="team-profile-content">
-                <!-- In-depth profile content rendered here -->
-            </div>
+            <div id="team-profile-content"></div>
         </section>
 
         <!-- MATCHUPS PAGE -->
@@ -889,7 +1114,7 @@
             <div class="table-container" id="matchups-matrix-container" style="display:none;"></div>
         </section>
 
-        <!-- STANDINGS PAGE -->
+        <!-- ALL TIME STANDINGS PAGE -->
         <section id="standings" class="page">
             <div class="page-header">
                 <h2>All-Time Standings</h2>
@@ -1155,7 +1380,7 @@
         }
 
         let realmData = {};
-        let editModes = { teams: false, matchups: false, currentSeason: false, pastSeason: null };
+        let editModes = { teams: false, matchups: false, currentSeason: false, pastSeason: null, gazette: false };
         let activePageId = 'landing';
         let matchupViewMode = 'cards';
         let teamSortColumn = 'team';
@@ -1174,6 +1399,7 @@
             else if (page === 'sleeper-settings') isEditing = editingSleeperSettings;
             else if (page === 'matchups') isEditing = editModes.matchups;
             else if (page === 'current-edit') isEditing = editModes.currentSeason;
+            else if (page === 'gazette-edit') isEditing = editModes.gazette;
             else if (page.startsWith('past-season-')) {
                 let yr = page.replace('past-season-', '');
                 isEditing = editModes.pastSeason === yr;
@@ -1187,12 +1413,14 @@
 
             if (isEditing) {
                 if (page === 'sleeper-settings') toggleSleeperSettings();
+                else if (page === 'gazette-edit') toggleGazetteEdit();
                 else toggleEdit(page);
             } else {
                 let pwd = prompt("Enter password to edit settings:");
                 if (pwd === "Domicuatro10!") {
                     if (page === 'promote-season') concludeCurrentSeason();
                     else if (page === 'sleeper-settings') toggleSleeperSettings();
+                    else if (page === 'gazette-edit') toggleGazetteEdit();
                     else toggleEdit(page);
                 } else if (pwd !== null) alert("Incorrect password!");
             }
@@ -1211,6 +1439,51 @@
                 }
             }
             renderData();
+        }
+
+        function toggleGazetteEdit() {
+            editModes.gazette = !editModes.gazette;
+            const container = document.getElementById('gazette-edit-container');
+            if (container) container.classList.toggle('active', editModes.gazette);
+            const btn = document.getElementById('btn-gazette-edit');
+            if (btn) btn.textContent = editModes.gazette ? "⚙️ Close Editor" : "⚙️ Edit Gazette";
+            if (editModes.gazette && realmData.gazette) {
+                document.getElementById('gazette-title-input').value = realmData.gazette.title || '';
+                document.getElementById('gazette-author-input').value = realmData.gazette.author || '';
+                document.getElementById('gazette-content-input').value = realmData.gazette.content || '';
+            }
+        }
+
+        async function saveGazette() {
+            if (!realmData.gazette) realmData.gazette = {};
+            realmData.gazette.title = document.getElementById('gazette-title-input').value.trim();
+            realmData.gazette.author = document.getElementById('gazette-author-input').value.trim();
+            realmData.gazette.content = document.getElementById('gazette-content-input').value.trim();
+            
+            await saveRealmData(realmData);
+            editModes.gazette = false;
+            document.getElementById('gazette-edit-container').classList.remove('active');
+            document.getElementById('btn-gazette-edit').textContent = "⚙️ Edit Gazette";
+            renderGazette();
+        }
+
+        function renderGazette() {
+            const container = document.getElementById('gazette-display-container');
+            if (!container) return;
+
+            let gaz = realmData.gazette || {
+                title: "Latest Dispatch: Week 1 Prophecies",
+                author: "Grand Maester",
+                content: "The banners are unfurled, the waiver wire is flowing with desperation, and winter has officially arrived for anyone who drafted an injured running back. May your lineups stay healthy and your opponents score fewer points than a headless peasant."
+            };
+
+            container.innerHTML = `
+                <div class="medieval-slab" style="padding: 2.5rem; margin-bottom: 2rem;">
+                    <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:0.5rem;">${gaz.title}</h3>
+                    <p style="font-style:italic; color:var(--text-muted); font-size:0.95rem; margin-bottom:1.5rem;">Published by ${gaz.author}</p>
+                    <p style="line-height:1.8; font-size:1.05rem;">${gaz.content.replace(/\n/g, '<br>')}</p>
+                </div>
+            `;
         }
 
         function toggleSleeperSettings() {
@@ -1400,6 +1673,7 @@
 
         const teamsPages = ['teams', 'rankings', 'team-profiles'];
         const historyPages = ['matchups', 'standings', 'seasons', 'champions', 'accolades'];
+        const currentSeasonSubPages = ['current-season', 'sleeper-matchups'];
 
         function switchPage(pageId) {
             activePageId = pageId;
@@ -1414,7 +1688,7 @@
 
             if (pageId.startsWith('past-season-')) {
                 document.getElementById('past-seasons-tab').classList.add('active');
-            } else if (pageId === 'current-season' || pageId === 'sleeper-matchups') {
+            } else if (currentSeasonSubPages.includes(pageId)) {
                 document.getElementById('current-season-tab').classList.add('active');
             } else if (teamsPages.includes(pageId)) {
                 document.getElementById('teams-menu-tab').classList.add('active');
@@ -1429,6 +1703,8 @@
                 loadSleeperMatchups();
             } else if (pageId === 'team-profiles') {
                 initTeamProfileDropdown();
+            } else if (pageId === 'maesters-gazette') {
+                renderGazette();
             }
         }
 
@@ -1445,6 +1721,12 @@
             document.getElementById('btn-view-cards').classList.toggle('active', view === 'cards');
             document.getElementById('btn-view-matrix').classList.toggle('active', view === 'matrix');
             renderMatchups();
+        }
+
+        function toggleCardExpansion(btn) {
+            const card = btn.closest('.duel-card');
+            card.classList.toggle('expanded');
+            btn.textContent = card.classList.contains('expanded') ? '▲ Hide Breakdown' : '▼ View Breakdown';
         }
 
         function sortStandingsArray(standingsArr) {
@@ -2275,6 +2557,10 @@
                     const houseName = row.house || '';
                     const oppName = row.opposingHouse || '';
 
+                    let leaderClass = "";
+                    if (hw > ohw) leaderClass = "leader-left";
+                    else if (ohw > hw) leaderClass = "leader-right";
+
                     if (isEditing) {
                         const houseOptions = availableTeams.map(t => `<option value="${t}" ${houseName === t ? 'selected' : ''}>${t}</option>`).join('');
                         const opposingOptions = availableTeams.map(t => `<option value="${t}" ${oppName === t ? 'selected' : ''}>${t}</option>`).join('');
@@ -2295,20 +2581,12 @@
                                         <select data-m-field="opposingHouse"><option value="">House 2</option>${opposingOptions}</select>
                                     </div>
                                 </div>
-                                <div class="duel-stats" style="grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                                    <div class="duel-stat-box" style="text-align: left;">
-                                        <div style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.3rem;">
-                                            <div>All-Time: <input type="number" min="0" value="${hw}" data-m-field="houseW" style="width:60px;"></div>
-                                            <div>Reg. W: <input type="number" min="0" value="${hReg}" data-m-field="houseRegW" style="width:60px;"></div>
-                                            <div>Play W: <input type="number" min="0" value="${hPlay}" data-m-field="housePlayW" style="width:60px;"></div>
-                                        </div>
-                                    </div>
-                                    <div class="duel-stat-box" style="text-align: right;">
-                                        <div style="font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-end;">
-                                            <div>All-Time: <input type="number" min="0" value="${ohw}" data-m-field="opposingHouseW" style="width:60px;"></div>
-                                            <div>Reg. W: <input type="number" min="0" value="${oReg}" data-m-field="opposingHouseRegW" style="width:60px;"></div>
-                                            <div>Play W: <input type="number" min="0" value="${oPlay}" data-m-field="opposingHousePlayW" style="width:60px;"></div>
-                                        </div>
+                                <div class="duel-stats-single">
+                                    <div class="stat-col-header">All-Time Record</div>
+                                    <div class="stat-val-row">
+                                        <input type="number" min="0" value="${hw}" data-m-field="houseW" style="width:60px;">
+                                        <span style="color:var(--text-muted)">-</span>
+                                        <input type="number" min="0" value="${ohw}" data-m-field="opposingHouseW" style="width:60px;">
                                     </div>
                                 </div>
                             </div>
@@ -2316,36 +2594,36 @@
                     } else {
                         const colorHAll = hw > ohw ? '#c5a059' : 'var(--text-main)';
                         const colorOAll = ohw > hw ? '#c5a059' : 'var(--text-main)';
-                        const colorHReg = hReg > oReg ? '#c5a059' : 'var(--text-main)';
-                        const colorOReg = oReg > hReg ? '#c5a059' : 'var(--text-main)';
-                        const colorHPlay = hPlay > oPlay ? '#c5a059' : 'var(--text-main)';
-                        const colorOPlay = oPlay > hPlay ? '#c5a059' : 'var(--text-main)';
 
                         const bowlHtml = row.bowlName && row.bowlName.trim() !== "" 
                             ? `<div class="bowl-title">⚔️ ${row.bowlName} ⚔️</div>` : '';
 
                         return `
-                            <div class="duel-card">
+                            <div class="duel-card ${leaderClass}">
                                 ${bowlHtml}
                                 <div class="duel-header">
                                     <span class="duel-house">${formatNameWithBanner(houseName)}</span>
                                     <span class="duel-vs">vs</span>
                                     <span class="duel-house" style="text-align:right;">${formatNameWithBanner(oppName)}</span>
                                 </div>
-                                <div class="duel-stats">
-                                    <div class="duel-stat-box" style="text-align: left; padding-left: 0.5rem;">
-                                        <div style="font-size: 0.85rem; margin-top: 0.3rem;">
-                                            <div><strong style="color:${colorHAll};">${hw}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">All-Time</span></div>
-                                            <div><strong style="color:${colorHReg};">${hReg}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">Reg. Season</span></div>
-                                            <div><strong style="color:${colorHPlay};">${hPlay}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">Playoffs</span></div>
-                                        </div>
+                                <div class="duel-stats-single" onclick="toggleCardExpansion(this.nextElementSibling)" style="cursor:pointer;" title="Click to view breakdown">
+                                    <div class="stat-col-header">All-Time Record</div>
+                                    <div class="stat-val-row">
+                                        <strong style="color:${colorHAll};">${hw}</strong>
+                                        <span style="color:var(--text-muted)">–</span>
+                                        <strong style="color:${colorOAll};">${ohw}</strong>
                                     </div>
-                                    <div class="duel-stat-box" style="text-align: right; padding-right: 0.5rem;">
-                                        <div style="font-size: 0.85rem; margin-top: 0.3rem;">
-                                            <div><strong style="color:${colorOAll};">${ohw}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">All-Time</span></div>
-                                            <div><strong style="color:${colorOReg};">${oReg}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">Reg. Season</span></div>
-                                            <div><strong style="color:${colorOPlay};">${oPlay}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">Playoffs</span></div>
-                                        </div>
+                                </div>
+                                <button class="expand-toggle-btn" onclick="toggleCardExpansion(this)">▼ View Breakdown</button>
+                                <div class="duel-details-container">
+                                    <div style="font-size: 0.8rem; font-family:'Cinzel',serif; color:var(--border-gold); text-align:center; border-bottom:1px dashed #2c2f3b; padding-bottom:0.3rem;">Regular & Playoff Splits</div>
+                                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding: 0.2rem 0;">
+                                        <span>Regular Season:</span>
+                                        <strong>${hReg} – ${oReg}</strong>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding: 0.2rem 0;">
+                                        <span>Playoffs:</span>
+                                        <strong>${hPlay} – ${oPlay}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -2510,20 +2788,22 @@
 
                 bracketEditHtml = `
                     <h4 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 1.5rem 0 1rem 0;">Edit Playoff Bracket Winners (Enter 0 for undecided)</h4>
-                    <div class="bracket-container">
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Quarterfinals</div>
-                            ${qfHtml}
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Semifinals</div>
-                            ${sfHtml}
-                        </div>
-                        <div class="bracket-round">
-                            <div class="bracket-round-title">Championship Battle</div>
-                            ${champHtml}
-                            <div style="font-family:'Cinzel',serif; font-size:0.80rem; color:var(--border-gold); margin:1.5rem 0 0.4rem 0; text-transform:uppercase;">Third Place Game</div>
-                            ${tpHtml}
+                    <div class="bracket-wrapper">
+                        <div class="bracket-container">
+                            <div class="bracket-round">
+                                <div class="bracket-round-title">Quarterfinals</div>
+                                ${qfHtml}
+                            </div>
+                            <div class="bracket-round">
+                                <div class="bracket-round-title">Semifinals</div>
+                                ${sfHtml}
+                            </div>
+                            <div class="bracket-round">
+                                <div class="bracket-round-title">Championship Battle</div>
+                                ${champHtml}
+                                <div style="font-family:'Cinzel',serif; font-size:0.80rem; color:var(--border-gold); margin:1.5rem 0 0.4rem 0; text-transform:uppercase;">Third Place Game</div>
+                                ${tpHtml}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2686,7 +2966,7 @@
             }
         }
 
-        function getTeamSeed(details, teamName) {
+        function getTeamSeedWithLabel(details, teamName) {
             if (!details || !details.standings || !teamName) return "";
             let index = details.standings.findIndex(st => st.team.trim().toLowerCase() === teamName.trim().toLowerCase());
             return index !== -1 ? `(#${index + 1}) ` : "";
@@ -2775,7 +3055,7 @@
 
                 let byesHtml = (details.byes || []).map((b) => `
                     <div class="bracket-matchup" style="border-style:dashed;">
-                        <div class="bracket-team"><span>${getTeamSeed(details, b.team)}${formatNameWithBanner(b.team)}</span><span class="bye-indicator">BYE</span></div>
+                        <div class="bracket-team"><span>${getTeamSeedWithLabel(details, b.team)}${formatNameWithBanner(b.team)}</span><span class="bye-indicator">BYE</span></div>
                     </div>
                 `).join('');
 
@@ -2791,8 +3071,8 @@
                     } else {
                         return `
                             <div class="bracket-matchup">
-                                <div class="bracket-team ${qf.winner === 1 ? 'winner' : ''}"><span>${getTeamSeed(details, qf.t1)}${formatNameWithBanner(qf.t1)}</span></div>
-                                <div class="bracket-team ${qf.winner === 2 ? 'winner' : ''}"><span>${getTeamSeed(details, qf.t2)}${formatNameWithBanner(qf.t2)}</span></div>
+                                <div class="bracket-team ${qf.winner === 1 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(details, qf.t1)}${formatNameWithBanner(qf.t1)}</span></div>
+                                <div class="bracket-team ${qf.winner === 2 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(details, qf.t2)}${formatNameWithBanner(qf.t2)}</span></div>
                             </div>
                         `;
                     }
@@ -2810,8 +3090,8 @@
                     } else {
                         return `
                             <div class="bracket-matchup">
-                                <div class="bracket-team ${semi.winner === 1 ? 'winner' : ''}"><span>${getTeamSeed(details, semi.t1)}${formatNameWithBanner(semi.t1 || 'TBD')}</span></div>
-                                <div class="bracket-team ${semi.winner === 2 ? 'winner' : ''}"><span>${getTeamSeed(details, semi.t2)}${formatNameWithBanner(semi.t2 || 'TBD')}</span></div>
+                                <div class="bracket-team ${semi.winner === 1 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(details, semi.t1)}${formatNameWithBanner(semi.t1 || 'TBD')}</span></div>
+                                <div class="bracket-team ${semi.winner === 2 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(details, semi.t2)}${formatNameWithBanner(semi.t2 || 'TBD')}</span></div>
                             </div>
                         `;
                     }
@@ -2826,8 +3106,8 @@
                     </div>
                 ` : `
                     <div class="bracket-matchup">
-                        <div class="bracket-team ${tp.winner === 1 ? 'winner' : ''}"><span>${getTeamSeed(details, tp.t1)}${formatNameWithBanner(tp.t1 || 'TBD')}</span></div>
-                        <div class="bracket-team ${tp.winner === 2 ? 'winner' : ''}"><span>${getTeamSeed(details, tp.t2)}${formatNameWithBanner(tp.t2 || 'TBD')}</span></div>
+                        <div class="bracket-team ${tp.winner === 1 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(details, tp.t1)}${formatNameWithBanner(tp.t1 || 'TBD')}</span></div>
+                        <div class="bracket-team ${tp.winner === 2 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(details, tp.t2)}${formatNameWithBanner(tp.t2 || 'TBD')}</span></div>
                     </div>
                 `;
 
@@ -2840,11 +3120,12 @@
                     </div>
                 ` : `
                     <div class="bracket-matchup" style="border-color: var(--border-gold);">
-                        <div class="bracket-team ${champ.winner === 1 ? 'winner' : ''}"><span>${champ.winner === 1 ? '👑 ' : ''}${getTeamSeed(details, champ.t1)}${formatNameWithBanner(champ.t1 || 'TBD')}</span></div>
-                        <div class="bracket-team ${champ.winner === 2 ? 'winner' : ''}"><span>${champ.winner === 2 ? '👑 ' : ''}${getTeamSeed(details, champ.t2)}${formatNameWithBanner(champ.t2 || 'TBD')}</span></div>
+                        <div class="bracket-team ${champ.winner === 1 ? 'winner' : ''}"><span>${champ.winner === 1 ? '👑 ' : ''}${getTeamSeedWithLabel(details, champ.t1)}${formatNameWithBanner(champ.t1 || 'TBD')}</span></div>
+                        <div class="bracket-team ${champ.winner === 2 ? 'winner' : ''}"><span>${champ.winner === 2 ? '👑 ' : ''}${getTeamSeedWithLabel(details, champ.t2)}${formatNameWithBanner(champ.t2 || 'TBD')}</span></div>
                     </div>
                 `;
 
+                // PLAYOFF BRACKET PLACED FIRST, FOLLOWED BY STANDINGS TABLE
                 pagesHtml += `
                     <section id="past-season-${year}" class="page">
                         <div class="page-header">
@@ -2854,16 +3135,7 @@
                                 <button class="action-btn danger-btn" onclick="requestPassword('delete-season-${year}')">🗑️ Delete Season</button>
                             </div>
                         </div>
-                        <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Season Standings</h3>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr><th>Rank</th><th>House / Owner</th><th>Team Name</th><th>W</th><th>L</th><th>Points</th><th>Against</th><th>Diff.</th></tr>
-                                </thead>
-                                <tbody>${standingsRows || '<tr><td colspan="8">No standings recorded.</td></tr>'}</tbody>
-                            </table>
-                        </div>
-                        <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Playoff Bracket</h3>
+                        <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Playoff Bracket</h3>
                         <div class="bracket-container">
                             <div class="bracket-round"><div class="bracket-round-title">Quarterfinals & Byes</div>${byesHtml}${qfHtml}</div>
                             <div class="bracket-round"><div class="bracket-round-title">Semifinals</div>${semisHtml}</div>
@@ -2871,6 +3143,15 @@
                                 <div class="bracket-round-title">Championship Battle</div>${champHtml}
                                 <div style="font-family:'Cinzel',serif; font-size:0.80rem; color:var(--border-gold); margin:1.5rem 0 0.4rem 0; text-transform:uppercase;">Third Place Game</div>${tpHtml}
                             </div>
+                        </div>
+                        <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Season Standings</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr><th>Rank</th><th>House / Owner</th><th>Team Name</th><th>W</th><th>L</th><th>Points</th><th>Against</th><th>Diff.</th></tr>
+                                </thead>
+                                <tbody>${standingsRows || '<tr><td colspan="8">No standings recorded.</td></tr>'}</tbody>
+                            </table>
                         </div>
                     </section>
                 `;
@@ -2910,42 +3191,42 @@
                 syncBracketData(cs);
                 let byesHtml = (cs.byes || []).map((b) => `
                     <div class="bracket-matchup" style="border-style:dashed;">
-                        <div class="bracket-team"><span>${getTeamSeed(cs, b.team)}${formatNameWithBanner(b.team)}</span><span class="bye-indicator">BYE</span></div>
+                        <div class="bracket-team"><span>${getTeamSeedWithLabel(cs, b.team)}${formatNameWithBanner(b.team)}</span><span class="bye-indicator">BYE</span></div>
                     </div>
                 `).join('');
 
                 let qfHtml = cs.quarterfinals.map((qf) => `
                     <div class="bracket-matchup">
-                        <div class="bracket-team ${qf.winner === 1 ? 'winner' : ''}"><span>${getTeamSeed(cs, qf.t1)}${formatNameWithBanner(qf.t1 || 'TBD')}</span></div>
-                        <div class="bracket-team ${qf.winner === 2 ? 'winner' : ''}"><span>${getTeamSeed(cs, qf.t2)}${formatNameWithBanner(qf.t2 || 'TBD')}</span></div>
+                        <div class="bracket-team ${qf.winner === 1 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(cs, qf.t1)}${formatNameWithBanner(qf.t1 || 'TBD')}</span></div>
+                        <div class="bracket-team ${qf.winner === 2 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(cs, qf.t2)}${formatNameWithBanner(qf.t2 || 'TBD')}</span></div>
                     </div>
                 `).join('');
 
                 let semisHtml = cs.semifinals.map((semi) => `
                     <div class="bracket-matchup">
-                        <div class="bracket-team ${semi.winner === 1 ? 'winner' : ''}"><span>${getTeamSeed(cs, semi.t1)}${formatNameWithBanner(semi.t1 || 'TBD')}</span></div>
-                        <div class="bracket-team ${semi.winner === 2 ? 'winner' : ''}"><span>${getTeamSeed(cs, semi.t2)}${formatNameWithBanner(semi.t2 || 'TBD')}</span></div>
+                        <div class="bracket-team ${semi.winner === 1 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(cs, semi.t1)}${formatNameWithBanner(semi.t1 || 'TBD')}</span></div>
+                        <div class="bracket-team ${semi.winner === 2 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(cs, semi.t2)}${formatNameWithBanner(semi.t2 || 'TBD')}</span></div>
                     </div>
                 `).join('');
 
                 const tp = cs.thirdPlaceGame || { t1: '', t2: '', winner: 0 };
                 let tpHtml = `
                     <div class="bracket-matchup">
-                        <div class="bracket-team ${tp.winner === 1 ? 'winner' : ''}"><span>${getTeamSeed(cs, tp.t1)}${formatNameWithBanner(tp.t1 || 'TBD')}</span></div>
-                        <div class="bracket-team ${tp.winner === 2 ? 'winner' : ''}"><span>${getTeamSeed(cs, tp.t2)}${formatNameWithBanner(tp.t2 || 'TBD')}</span></div>
+                        <div class="bracket-team ${tp.winner === 1 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(cs, tp.t1)}${formatNameWithBanner(tp.t1 || 'TBD')}</span></div>
+                        <div class="bracket-team ${tp.winner === 2 ? 'winner' : ''}"><span>${getTeamSeedWithLabel(cs, tp.t2)}${formatNameWithBanner(tp.t2 || 'TBD')}</span></div>
                     </div>
                 `;
 
                 const champ = cs.championship || { t1: '', t2: '', winner: 0 };
                 let champHtml = `
                     <div class="bracket-matchup" style="border-color: var(--border-gold);">
-                        <div class="bracket-team ${champ.winner === 1 ? 'winner' : ''}"><span>${champ.winner === 1 ? '👑 ' : ''}${getTeamSeed(cs, champ.t1)}${formatNameWithBanner(champ.t1 || 'TBD')}</span></div>
-                        <div class="bracket-team ${champ.winner === 2 ? 'winner' : ''}"><span>${champ.winner === 2 ? '👑 ' : ''}${getTeamSeed(cs, champ.t2)}${formatNameWithBanner(champ.t2 || 'TBD')}</span></div>
+                        <div class="bracket-team ${champ.winner === 1 ? 'winner' : ''}"><span>${champ.winner === 1 ? '👑 ' : ''}${getTeamSeedWithLabel(cs, champ.t1)}${formatNameWithBanner(champ.t1 || 'TBD')}</span></div>
+                        <div class="bracket-team ${champ.winner === 2 ? 'winner' : ''}"><span>${champ.winner === 2 ? '👑 ' : ''}${getTeamSeedWithLabel(cs, champ.t2)}${formatNameWithBanner(champ.t2 || 'TBD')}</span></div>
                     </div>
                 `;
 
                 bracketDisplayHtml = `
-                    <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Playoff Bracket</h3>
+                    <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Playoff Bracket</h3>
                     <div class="bracket-container">
                         <div class="bracket-round"><div class="bracket-round-title">Quarterfinals & Byes</div>${byesHtml}${qfHtml}</div>
                         <div class="bracket-round"><div class="bracket-round-title">Semifinals</div>${semisHtml}</div>
@@ -2956,11 +3237,13 @@
                     </div>
                 `;
             } else {
-                bracketDisplayHtml = `<p style="color:var(--text-muted); font-style:italic; margin-top:2rem;">Playoff bracket will appear once all teams have completed 14 games (Wins + Losses = 14).</p>`;
+                bracketDisplayHtml = `<p style="color:var(--text-muted); font-style:italic; margin-bottom:2rem;">Playoff bracket will appear once all teams have completed 14 games (Wins + Losses = 14).</p>`;
             }
 
+            // PLAYOFF BRACKET PLACED FIRST, FOLLOWED BY STANDINGS TABLE
             document.getElementById('current-season-display').innerHTML = `
-                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">${cs.year || '2026'} Standings</h3>
+                ${bracketDisplayHtml}
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">${cs.year || '2026'} Standings</h3>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -2969,14 +3252,14 @@
                         <tbody>${standingsRows || '<tr><td colspan="8">No standings recorded.</td></tr>'}</tbody>
                     </table>
                 </div>
-                ${bracketDisplayHtml}
             `;
         }
 
         function initTeamProfileDropdown() {
             const select = document.getElementById('profile-house-select');
             if (!select) return;
-            const availableTeams = getAvailableTeams();
+            // SORTED ALPHABETICALLY A TO Z
+            const availableTeams = getAvailableTeams().sort((a, b) => a.localeCompare(b));
             const currentVal = select.value;
 
             select.innerHTML = availableTeams.map(t => `<option value="${t}" ${currentVal === t ? 'selected' : ''}>${t}</option>`).join('');
@@ -3359,6 +3642,7 @@
 
             renderCurrentSeasonDisplay();
             renderPastSeasonsDropdownAndPages();
+            renderGazette();
 
             const teamsBtn = document.getElementById('btn-teams');
             if (teamsBtn) teamsBtn.textContent = editModes.teams ? "⚙️ Close Editor" : "⚙️";
@@ -3368,7 +3652,7 @@
 
             const initialPage = window.location.hash ? window.location.hash.replace('#/', '') : activePageId;
             switchPage(initialPage);
-        }
+        };
 
         window.onload = async () => {
             realmData = await loadRealmData();
@@ -3387,8 +3671,9 @@
             if (!select || select.children.length > 0) return;
             
             let options = '';
-            for (let w = 1; w <= 14; w++) {
-                options += `<option value="${w}">Week ${w}</option>`;
+            for (let w = 1; w <= 17; w++) {
+                let label = w <= 14 ? `Week ${w}` : (w === 15 ? `Playoff Rd 1 (W15)` : (w === 16 ? `Playoff Semis (W16)` : `Championship (W17)`));
+                options += `<option value="${w}">${label}</option>`;
             }
             select.innerHTML = options;
         }
@@ -3404,15 +3689,16 @@
             }
 
             const weekSelect = document.getElementById('sleeper-week-select');
-            const selectedWeek = weekSelect ? weekSelect.value : "1";
+            const selectedWeek = weekSelect ? parseInt(weekSelect.value) : 1;
 
-            grid.innerHTML = `<p style="color: var(--border-gold);">Summoning live scores from Sleeper for Week ${selectedWeek}...</p>`;
+            grid.innerHTML = `<p style="color: var(--border-gold);">Summoning live scores and player breakdowns from Sleeper for Week ${selectedWeek}...</p>`;
 
             try {
-                const [usersRes, rostersRes, matchupsRes] = await Promise.all([
+                const [usersRes, rostersRes, matchupsRes, playersRes] = await Promise.all([
                     fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
                     fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
-                    fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${selectedWeek}`)
+                    fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${selectedWeek}`),
+                    fetch(`https://api.sleeper.app/v1/players/nfl`)
                 ]);
 
                 if (!usersRes.ok || !rostersRes.ok || !matchupsRes.ok) {
@@ -3422,6 +3708,10 @@
                 const users = await usersRes.json();
                 const rosters = await rostersRes.json();
                 const matchups = await matchupsRes.json();
+                let playersMap = {};
+                try {
+                    playersMap = await playersRes.json();
+                } catch(e) {}
 
                 if (!matchups || matchups.length === 0) {
                     grid.innerHTML = `<p style="color: var(--text-muted);">No matchup data found for Week ${selectedWeek}.</p>`;
@@ -3436,7 +3726,6 @@
                 let rosterToHouse = {};
                 rosters.forEach(r => {
                     let sleeperOwnerName = userMap[r.owner_id] || `Roster #${r.roster_id}`;
-                    
                     let assignedHouse = realmData.sleeperMappings ? realmData.sleeperMappings[r.roster_id] : null;
 
                     if (!assignedHouse && realmData.currentSeason && realmData.currentSeason.standings) {
@@ -3452,10 +3741,21 @@
                     rosterToHouse[r.roster_id] = assignedHouse || sleeperOwnerName;
                 });
 
+                let top6Houses = new Set();
+                if (realmData.currentSeason && realmData.currentSeason.standings) {
+                    realmData.currentSeason.standings.slice(0, 6).forEach(st => top6Houses.add(st.team.trim().toLowerCase()));
+                }
+
                 let matchupPairs = {};
                 matchups.forEach(m => {
                     let mId = m.matchup_id;
                     if (!mId) return; 
+                    let houseName = rosterToHouse[m.roster_id] || "";
+                    
+                    if (selectedWeek >= 15 && top6Houses.size > 0) {
+                        if (!top6Houses.has(houseName.toLowerCase())) return;
+                    }
+
                     if (!matchupPairs[mId]) matchupPairs[mId] = [];
                     matchupPairs[mId].push(m);
                 });
@@ -3471,18 +3771,42 @@
                     let t1Name = rosterToHouse[team1.roster_id] || `Team ${team1.roster_id}`;
                     let t2Name = rosterToHouse[team2.roster_id] || `Team ${team2.roster_id}`;
 
+                    let t1Seed = getTeamSeedWithLabel(realmData.currentSeason, t1Name);
+                    let t2Seed = getTeamSeedWithLabel(realmData.currentSeason, t2Name);
+
                     let t1Score = team1.points !== undefined ? team1.points : 0;
                     let t2Score = team2.points !== undefined ? team2.points : 0;
 
                     let colorT1 = t1Score > t2Score ? '#c5a059' : 'var(--text-main)';
                     let colorT2 = t2Score > t1Score ? '#c5a059' : 'var(--text-main)';
 
+                    const renderPlayerList = (starters, playersPoints) => {
+                        if (!starters || !Array.isArray(starters)) return '<div style="color:var(--text-muted); padding:0.5rem;">No lineup data</div>';
+                        return starters.map(pId => {
+                            let pInfo = playersMap[pId] || { first_name: "Unknown", last_name: "Player", position: "BN", team: "FA" };
+                            let pName = `${pInfo.first_name || ''} ${pInfo.last_name || ''}`.trim() || pId;
+                            let pPos = pInfo.position || 'FLEX';
+                            let pTeam = pInfo.team || '';
+                            let pts = playersPoints && playersPoints[pId] !== undefined ? playersPoints[pId] : 0;
+
+                            return `
+                                <div class="player-row">
+                                    <span>${pName} <span style="font-size:0.75rem; color:var(--text-muted);">(${pPos} - ${pTeam})</span></span>
+                                    <strong>${Number(pts).toFixed(2)}</strong>
+                                </div>
+                            `;
+                        }).join('');
+                    };
+
+                    let t1PlayersHtml = renderPlayerList(team1.starters, team1.players_points);
+                    let t2PlayersHtml = renderPlayerList(team2.starters, team2.players_points);
+
                     html += `
                         <div class="duel-card">
                             <div class="duel-header">
-                                <span class="duel-house">${formatNameWithBanner(t1Name)}</span>
+                                <span class="duel-house">${t1Seed}${formatNameWithBanner(t1Name)}</span>
                                 <span class="duel-vs">vs</span>
-                                <span class="duel-house" style="text-align:right;">${formatNameWithBanner(t2Name)}</span>
+                                <span class="duel-house" style="text-align:right;">${t2Seed}${formatNameWithBanner(t2Name)}</span>
                             </div>
                             <div class="duel-stats">
                                 <div class="duel-stat-box" style="text-align: left; padding-left: 0.5rem;">
@@ -3496,11 +3820,15 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="player-breakdown-container">
+                                <div class="player-list">${t1PlayersHtml}</div>
+                                <div class="player-list">${t2PlayersHtml}</div>
+                            </div>
                         </div>
                     `;
                 }
 
-                grid.innerHTML = html || `<p style="color: var(--text-muted);">No active head-to-head pairings found for this week.</p>`;
+                grid.innerHTML = html || `<p style="color: var(--text-muted);">No active matchups found for seeds 1-6 in Week ${selectedWeek}.</p>`;
 
             } catch (err) {
                 grid.innerHTML = `<p style="color: #ff4d4f;">Error pulling data from Sleeper: ${err.message}</p>`;
