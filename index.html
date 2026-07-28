@@ -781,7 +781,8 @@
             <div class="page-header">
                 <h2>The Maester's Gazette</h2>
                 <div class="action-btn-group">
-                    <button class="action-btn" onclick="requestPassword('gazette-edit')" id="btn-gazette-edit">⚙️ Edit Gazette</button>
+                    <button class="action-btn" onclick="requestPassword('gazette-edit')" id="btn-gazette-edit">⚙️ Edit</button>
+		<button class="action-btn danger-btn" onclick="deleteGazetteEntry()">🗑️ Delete</button>
                 </div>
             </div>
             
@@ -3874,46 +3875,25 @@ function renderPastSeasonsDropdownAndPages() {
                 syncBracketData(details);
 
                 let standingsRows = details.standings.map((row, idx) => {
-                    const teamNameVal = row.owner || row.team.replace(/\([^)]*\)/g, '').trim();
-                    const ptsVal = row.pts !== undefined ? row.pts : 1200;
-                    const againstVal = row.against !== undefined ? row.against : 0;
-                    const diffVal = (ptsVal - againstVal).toFixed(1);
-                    const formattedDiff = diffVal > 0 ? `+${diffVal}` : diffVal;
+    const teamNameVal = row.owner || row.team.replace(/\([^)]*\)/g, '').trim();
+    const ptsVal = row.pts !== undefined ? row.pts : 1200;
+    const againstVal = row.against !== undefined ? row.against : 0;
+    const diffVal = (ptsVal - againstVal).toFixed(1);
+    const formattedDiff = diffVal > 0 ? `+${diffVal}` : diffVal;
 
-                    if (isEditing) {
-                        let teamDropdownOptions = availableTeams.map(t => `<option value="${t}" ${row.team === t ? 'selected' : ''}>${t}</option>`).join('');
-                        return `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td>
-                                    <select class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="team">
-                                        <option value="">Select House</option>${teamDropdownOptions}
-                                        <option value="${row.team}" ${!availableTeams.includes(row.team) ? 'selected' : ''}>${row.team}</option>
-                                    </select>
-                                </td>
-                                <td><input type="text" value="${teamNameVal}" class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="owner"></td>
-                                <td><input type="number" value="${row.w}" class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="w"></td>
-                                <td><input type="number" value="${row.l}" class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="l"></td>
-                                <td><input type="number" step="0.1" value="${ptsVal}" class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="pts"></td>
-                                <td><input type="number" step="0.1" value="${againstVal}" class="past-season-input" data-ps-type="standings" data-ps-index="${idx}" data-ps-field="against"></td>
-                                <td>-</td>
-                            </tr>
-                        `;
-                    } else {
-                        return `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td><strong>${formatNameWithBanner(row.team)}</strong></td>
-                                <td>${formatNameWithBanner(teamNameVal)}</td>
-                                <td>${row.w}</td>
-                                <td>${row.l}</td>
-                                <td>${ptsVal}</td>
-                                <td>${againstVal}</td>
-                                <td><strong style="color:var(--text-main);">${formattedDiff}</strong></td>
-                            </tr>
-                        `;
-                    }
-                }).join('');
+    return `
+        <tr>
+            <td>${idx + 1}</td>
+            <td><strong>${formatNameWithBanner(row.team)}</strong></td>
+            <td>${formatNameWithBanner(teamNameVal)}</td>
+            <td>${row.w}</td>
+            <td>${row.l}</td>
+            <td>${Number(ptsVal).toLocaleString()}</td>
+            <td>${Number(againstVal).toLocaleString()}</td>
+            <td><strong style="color:var(--text-main);">${formattedDiff}</strong></td>
+        </tr>
+    `;
+}).join('');
 
                 let byesHtml = (details.byes || []).map((b) => `
                     <div class="bracket-matchup" style="border-style:dashed;">
@@ -4028,10 +4008,9 @@ function renderPastSeasonsDropdownAndPages() {
                     <section id="past-season-${year}" class="page">
                         <div class="page-header">
                             <h2>${year} Season</h2>
-                            <div class="action-btn-group">
-                                <button class="action-btn" onclick="requestPassword('past-season-${year}')">${isEditing ? '💾 Save Changes' : '⚙️'}</button>
-                                <button class="action-btn danger-btn" onclick="requestPassword('delete-season-${year}')">🗑️ Delete Season</button>
-                            </div>
+			<div class="action-btn-group">
+    			<button class="action-btn danger-btn" onclick="requestPassword('delete-season-${year}')">🗑️ Delete Season</button>
+			</div>
                         </div>
                         <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Playoff Bracket</h3>
                         <div class="bracket-container">
@@ -4751,6 +4730,29 @@ function renderPastSeasonsDropdownAndPages() {
                 grid.innerHTML = `<p style="color: #ff4d4f;">Error pulling data from Sleeper: ${err.message}</p>`;
             }
         }
+
+async function deleteGazetteEntry() {
+    if (!confirm("Are you sure you want to delete the current Gazette dispatch?")) return;
+    
+    // Clear out or reset the gazette data object
+    realmData.gazette = {
+        title: "No Active Dispatch",
+        author: "Grand Maester",
+        content: "The realm is currently peaceful. No new dispatches have been published."
+    };
+
+    await saveRealmData(realmData);
+    
+    // Close editor if open and re-render
+    editModes.gazette = false;
+    const container = document.getElementById('gazette-edit-container');
+    if (container) container.classList.remove('active');
+    const btn = document.getElementById('btn-gazette-edit');
+    if (btn) btn.textContent = "⚙️ Edit";
+    
+    renderGazette();
+    alert("Gazette dispatch has been deleted.");
+}
     </script>
 </body>
 </html>
