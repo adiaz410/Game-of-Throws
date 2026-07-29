@@ -782,7 +782,6 @@
                 <h2>The Maester's Gazette</h2>
                 <div class="action-btn-group">
                     <button class="action-btn" onclick="requestPassword('gazette-edit')" id="btn-gazette-edit">⚙️ Edit</button>
-		<button class="action-btn danger-btn" onclick="deleteGazetteEntry()">🗑️ Delete</button>
                 </div>
             </div>
             
@@ -1432,49 +1431,129 @@
         }
 
         function toggleGazetteEdit() {
-            editModes.gazette = !editModes.gazette;
-            const container = document.getElementById('gazette-edit-container');
-            if (container) container.classList.toggle('active', editModes.gazette);
-            const btn = document.getElementById('btn-gazette-edit');
-            if (btn) btn.textContent = editModes.gazette ? "⚙️ Close Editor" : "⚙️ Edit Gazette";
-            if (editModes.gazette && realmData.gazette) {
-                document.getElementById('gazette-title-input').value = realmData.gazette.title || '';
-                document.getElementById('gazette-author-input').value = realmData.gazette.author || '';
-                document.getElementById('gazette-content-input').value = realmData.gazette.content || '';
-            }
-        }
+    editModes.gazette = !editModes.gazette;
+    const container = document.getElementById('gazette-edit-container');
+    if (container) container.classList.toggle('active', editModes.gazette);
+    const btn = document.getElementById('btn-gazette-edit');
+    if (btn) btn.textContent = editModes.gazette ? "⚙️ Close Editor" : "⚙️ Edit";
+    
+    if (editModes.gazette && realmData.gazette) {
+        document.getElementById('gazette-title-input').value = realmData.gazette.title || '';
+        document.getElementById('gazette-author-input').value = realmData.gazette.author || '';
+        document.getElementById('gazette-content-input').value = realmData.gazette.content || '';
+    }
+
+    // Re-render the gazette posts so the delete buttons appear/disappear dynamically
+    renderGazette();
+}
 
         async function saveGazette() {
-            if (!realmData.gazette) realmData.gazette = {};
-            realmData.gazette.title = document.getElementById('gazette-title-input').value.trim();
-            realmData.gazette.author = document.getElementById('gazette-author-input').value.trim();
-            realmData.gazette.content = document.getElementById('gazette-content-input').value.trim();
-            
-            await saveRealmData(realmData);
-            editModes.gazette = false;
-            document.getElementById('gazette-edit-container').classList.remove('active');
-            document.getElementById('btn-gazette-edit').textContent = "⚙️ Edit Gazette";
-            renderGazette();
-        }
+    if (!realmData.gazettePosts) realmData.gazettePosts = [];
+    
+    let title = document.getElementById('gazette-title-input').value.trim();
+    let author = document.getElementById('gazette-author-input').value.trim();
+    let content = document.getElementById('gazette-content-input').value.trim();
+    
+    if (!title && !content) {
+        alert("Please provide a title or content for the dispatch.");
+        return;
+    }
+
+    let newPost = {
+        id: Date.now(),
+        title: title || "Untitled Dispatch",
+        author: author || "Grand Maester",
+        content: content || "",
+        date: new Date().toLocaleDateString()
+    };
+
+    // Prepend so newest is always first
+    realmData.gazettePosts.unshift(newPost);
+    
+    await saveRealmData(realmData);
+    
+    // Reset form fields and close editor
+    document.getElementById('gazette-title-input').value = '';
+    document.getElementById('gazette-author-input').value = '';
+    document.getElementById('gazette-content-input').value = '';
+    editModes.gazette = false;
+    document.getElementById('gazette-edit-container').classList.remove('active');
+    document.getElementById('btn-gazette-edit').textContent = "⚙️ Edit";
+    
+    renderGazette();
+}
 
         function renderGazette() {
-            const container = document.getElementById('gazette-display-container');
-            if (!container) return;
+    const container = document.getElementById('gazette-display-container');
+    if (!container) return;
 
-            let gaz = realmData.gazette || {
-                title: "Latest Dispatch: Week 1 Prophecies",
-                author: "Grand Maester",
-                content: "The banners are unfurled, the waiver wire is flowing with desperation, and winter has officially arrived for anyone who drafted an injured running back. May your lineups stay healthy and your opponents score fewer points than a headless peasant."
-            };
+    if (!realmData.gazettePosts && realmData.gazette) {
+        realmData.gazettePosts = [ { id: 1, ...realmData.gazette, date: "" } ];
+    }
 
-            container.innerHTML = `
-                <div class="medieval-slab" style="padding: 2.5rem; margin-bottom: 2rem;">
-                    <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:0.5rem;">${gaz.title}</h3>
-                    <p style="font-style:italic; color:var(--text-muted); font-size:0.95rem; margin-bottom:1.5rem;">Published by ${gaz.author}</p>
-                    <p style="line-height:1.8; font-size:1.05rem;">${gaz.content.replace(/\n/g, '<br>')}</p>
-                </div>
-            `;
+    let posts = realmData.gazettePosts || [];
+
+    // Toggle multi-select delete action bar inside the edit container if open
+    let batchDeleteContainer = document.getElementById('gazette-batch-actions');
+    if (editModes.gazette) {
+        if (!batchDeleteContainer) {
+            let editContainer = document.getElementById('gazette-edit-container');
+            if (editContainer) {
+                let batchDiv = document.createElement('div');
+                batchDiv.id = 'gazette-batch-actions';
+                batchDiv.style.cssText = "margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed #2c2f3b; display: flex; justify-content: space-between; align-items: center;";
+                batchDiv.innerHTML = `
+                    <span style="font-family:'Cinzel',serif; font-size:0.85rem; color:var(--border-gold);">Batch Management</span>
+                    <button class="action-btn danger-btn" onclick="deleteGazetteEntry()">🗑️ Delete Selected Dispatches</button>
+                `;
+                editContainer.appendChild(batchDiv);
+            }
+        } else {
+            batchDeleteContainer.style.display = 'flex';
         }
+    } else if (batchDeleteContainer) {
+        batchDeleteContainer.style.display = 'none';
+    }
+
+    if (posts.length === 0) {
+        container.innerHTML = `
+            <div class="medieval-slab" style="padding: 2.5rem; margin-bottom: 2rem; text-align: center;">
+                <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:0.5rem;">No Active Dispatches</h3>
+                <p style="font-style:italic; color:var(--text-muted); font-size:0.95rem;">The realm is currently peaceful. Use the editor above to publish a new chronicle.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = posts.map((post, index) => {
+        let isNewest = (index === 0);
+        let displayStyle = isNewest ? 'block' : 'none';
+        let cursorStyle = isNewest ? 'default' : 'pointer';
+        let clickAction = isNewest ? '' : `onclick="toggleGazettePost(${post.id})"`;
+        let hoverHint = isNewest ? '' : `title="Click to expand/collapse dispatch"`;
+
+        // Checkbox and individual delete button appear when edit mode is active
+        let controlControlsHtml = editModes.gazette ? `
+            <div style="position: absolute; top: 1.5rem; right: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
+                <input type="checkbox" class="gazette-select" value="${post.id}" style="width: 18px; height: 18px; cursor: pointer;" title="Select for batch deletion">
+                <button class="action-btn danger-btn" onclick="deleteGazetteEntry(${post.id})" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">🗑️ Delete</button>
+            </div>
+        ` : '';
+
+        return `
+            <div class="medieval-slab" style="padding: 2.5rem; margin-bottom: 2rem; position: relative;">
+                ${controlControlsHtml}
+                <h3 ${clickAction} ${hoverHint} style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:0.5rem; cursor:${cursorStyle}; display: inline-block;">
+                    ${isNewest ? '' : '📜 '} ${post.title} ${isNewest ? '' : '<span style="font-size:0.75rem; color:var(--text-muted); font-style:italic; font-family:\'Lora\',serif;">(Click to toggle)</span>'}
+                </h3>
+                <p style="font-style:italic; color:var(--text-muted); font-size:0.95rem; margin-bottom:1.5rem;">Published by ${post.author} ${post.date ? 'on ' + post.date : ''}</p>
+                <div id="gazette-body-${post.id}" style="display: ${displayStyle};">
+                    <p style="line-height:1.8; font-size:1.05rem;">${(post.content || "").replace(/\n/g, '<br>')}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
         function toggleSleeperSettings() {
             editingSleeperSettings = !editingSleeperSettings;
@@ -1957,40 +2036,62 @@ function renderH2H() {
         }
 
         async function concludeCurrentSeason() {
-            if (!confirm("Are you sure you want to conclude the current season, archive it into history, and reset for a new season?")) return;
-            
-            let cs = realmData.currentSeason;
-            let yr = cs.year || "2026";
+    if (!confirm("Are you sure you want to conclude the current season, archive it into history, and reset for a new season?")) return;
+    
+    let cs = realmData.currentSeason;
+    let yr = cs.year || "2026";
 
-            syncBracketData(cs);
+    syncBracketData(cs);
 
-            let archivedWeeklyScores = document.getElementById('sleeper-matchups-grid').innerHTML;
+    // Fetch and cache all weekly matchups from Sleeper for the season before concluding
+    let leagueId = realmData.sleeperLeagueId;
+    let archivedMatchups = [];
 
-            realmData.pastSeasonDetails[yr] = JSON.parse(JSON.stringify(cs));
-            realmData.pastSeasonDetails[yr].archivedWeeklyScores = archivedWeeklyScores;
-            
-            if (!realmData.seasons.some(s => s.year === yr)) {
-                realmData.seasons.unshift({ year: yr });
+    if (leagueId) {
+        try {
+            let requests = [];
+            for (let w = 1; w <= 17; w++) {
+                requests.push(fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${w}`).then(res => res.json()).catch(() => []));
             }
-
-            let nextYr = (parseInt(yr) + 1).toString();
-            realmData.currentSeason = {
-                year: nextYr,
-                standings: realmData.standings.filter(s => s.status !== 'exiled to Essos').map(s => ({ team: s.team, owner: s.team, w: 0, l: 0, pts: 0, against: 0 })),
-                quarterfinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
-                semifinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
-                thirdPlaceGame: { t1: "", t2: "", winner: 0 },
-                championship: { t1: "", t2: "", winner: 0 }
-            };
-
-            realmData.sleeperLeagueId = "";
-            realmData.sleeperMappings = {};
-
-            await saveRealmData(realmData);
-            renderData();
-            alert(`Season ${yr} successfully concluded and archived into history! Current season updated to ${nextYr}. Sleeper configuration reset.`);
-            switchPage('current-season');
+            let allWeeksData = await Promise.all(requests);
+            allWeeksData.forEach((weekMatchups, index) => {
+                let wkNum = index + 1;
+                if (Array.isArray(weekMatchups)) {
+                    weekMatchups.forEach(m => {
+                        archivedMatchups.push({ season: yr, week: wkNum.toString(), ...m });
+                    });
+                }
+            });
+        } catch (e) {
+            console.error("Could not fetch full Sleeper history during conclusion:", e);
         }
+    }
+
+    realmData.pastSeasonDetails[yr] = JSON.parse(JSON.stringify(cs));
+    realmData.pastSeasonDetails[yr].archivedMatchups = archivedMatchups;
+    
+    if (!realmData.seasons.some(s => s.year === yr)) {
+        realmData.seasons.unshift({ year: yr });
+    }
+
+    let nextYr = (parseInt(yr) + 1).toString();
+    realmData.currentSeason = {
+        year: nextYr,
+        standings: realmData.standings.filter(s => s.status !== 'exiled to Essos').map(s => ({ team: s.team, owner: s.team, w: 0, l: 0, pts: 0, against: 0 })),
+        quarterfinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
+        semifinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
+        thirdPlaceGame: { t1: "", t2: "", winner: 0 },
+        championship: { t1: "", t2: "", winner: 0 }
+    };
+
+    realmData.sleeperLeagueId = "";
+    realmData.sleeperMappings = {};
+
+    await saveRealmData(realmData);
+    renderData();
+    alert(`Season ${yr} successfully concluded and archived into history! Current season updated to ${nextYr}. Sleeper configuration reset.`);
+    switchPage('current-season');
+}
 
         const teamsPages = ['teams', 'rankings', 'team-profiles'];
         const historyPages = ['h2h', 'standings', 'seasons', 'champions', 'accolades'];
@@ -2062,6 +2163,123 @@ function renderH2H() {
             }
             return true;
         }
+
+function renderArchivedSeasonMatchups(year) {
+    const grid = document.getElementById(`past-season-${year}-matchups-grid`);
+    const weekSelect = document.getElementById(`season-${year}-week-select`);
+    if (!grid || !weekSelect) return;
+
+    const selectedWeek = weekSelect.value;
+    const details = realmData.pastSeasonDetails ? realmData.pastSeasonDetails[year] : null;
+    let dataset = details && details.archivedMatchups ? details.archivedMatchups : [];
+
+    // Fallback support for older static past seasons (2019-2025)
+    if (dataset.length === 0) {
+        if (year === "2019") dataset = typeof raw2019Matchups !== 'undefined' ? raw2019Matchups : [];
+        else if (year === "2020") dataset = typeof raw2020Matchups !== 'undefined' ? raw2020Matchups : [];
+        else if (year === "2021") dataset = typeof raw2021Matchups !== 'undefined' ? raw2021Matchups : [];
+        else if (year === "2022") dataset = typeof raw2022Matchups !== 'undefined' ? raw2022Matchups : [];
+        else if (year === "2023") dataset = typeof raw2023Matchups !== 'undefined' ? raw2023Matchups : [];
+        else if (year === "2024") dataset = typeof raw2024Matchups !== 'undefined' ? raw2024Matchups : [];
+        else if (year === "2025") dataset = typeof raw2025Matchups !== 'undefined' ? raw2025Matchups : [];
+    }
+
+    const weekMatches = dataset.filter(m => String(m.week) === String(selectedWeek));
+
+    if (weekMatches.length === 0) {
+        grid.innerHTML = `<p style="color: var(--text-muted); font-style: italic;">No matchup records found for Week ${selectedWeek}.</p>`;
+        return;
+    }
+
+    // Group matchups by matchup_id if they are raw Sleeper objects, or unique pairs otherwise
+    let matchupPairs = {};
+    weekMatches.forEach(m => {
+        let mId = m.matchup_id || `${m.owner}-${m.opponentOwner}`;
+        if (!matchupPairs[mId]) matchupPairs[mId] = [];
+        matchupPairs[mId].push(m);
+    });
+
+    let html = '';
+    for (let mId in matchupPairs) {
+        let pair = matchupPairs[mId];
+        
+        // Handle static custom dataset format (e.g., raw2019Matchups structure)
+        if (pair.length === 1 && pair[0].score) {
+            let m = pair[0];
+            let scores = m.score.split(" - ");
+            let teamScore = parseFloat(scores[0]) || 0;
+            let oppScore = parseFloat(scores[1]) || 0;
+            let colorTeam = teamScore > oppScore ? '#c5a059' : 'var(--text-main)';
+            let colorOpp = oppScore > teamScore ? '#c5a059' : 'var(--text-main)';
+
+            html += `
+                <div class="duel-card">
+                    <div class="duel-header">
+                        <span class="duel-house">${formatNameWithBanner(m.owner || m.house)}</span>
+                        <span class="duel-vs">vs</span>
+                        <span class="duel-house" style="text-align:right;">${formatNameWithBanner(m.opponentOwner || m.opponent)}</span>
+                    </div>
+                    <div class="duel-stats" style="display:flex; justify-content:space-around; padding: 0.8rem 0; background:#0f1115; border:1px solid #2c2f3b;">
+                        <div style="text-align:center;">
+                            <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">${m.owner || m.house}</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:${colorTeam};">${teamScore.toFixed(2)}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; color:var(--text-muted);">–</div>
+                        <div style="text-align:center;">
+                            <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">${m.opponentOwner || m.opponent}</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:${colorOpp};">${oppScore.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (pair.length >= 2) {
+            // Handle raw Sleeper multi-roster object structure
+            let team1 = pair[0];
+            let team2 = pair[1];
+            
+            // Map roster IDs to Team / House names using details.standings or roster mappings
+            let t1Name = `Roster #${team1.roster_id}`;
+            let t2Name = `Roster #${team2.roster_id}`;
+
+            if (details && details.standings) {
+                // Try finding matching owner/team names if stored
+                let found1 = details.standings.find(st => st.roster_id === team1.roster_id);
+                let found2 = details.standings.find(st => st.roster_id === team2.roster_id);
+                if (found1) t1Name = found1.team;
+                if (found2) t2Name = found2.team;
+            }
+
+            let t1Score = team1.points !== undefined ? team1.points : 0;
+            let t2Score = team2.points !== undefined ? team2.points : 0;
+            let colorT1 = t1Score > t2Score ? '#c5a059' : 'var(--text-main)';
+            let colorT2 = t2Score > t1Score ? '#c5a059' : 'var(--text-main)';
+
+            html += `
+                <div class="duel-card">
+                    <div class="duel-header">
+                        <span class="duel-house">${formatNameWithBanner(t1Name)}</span>
+                        <span class="duel-vs">vs</span>
+                        <span class="duel-house" style="text-align:right;">${formatNameWithBanner(t2Name)}</span>
+                    </div>
+                    <div class="duel-stats">
+                        <div class="duel-stat-box" style="text-align: left; padding-left: 0.5rem;">
+                            <div style="font-size: 1.1rem; margin-top: 0.3rem;">
+                                <strong style="color:${colorT1};">${t1Score.toFixed(2)}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">PTS</span>
+                            </div>
+                        </div>
+                        <div class="duel-stat-box" style="text-align: right; padding-right: 0.5rem;">
+                            <div style="font-size: 1.1rem; margin-top: 0.3rem;">
+                                <strong style="color:${colorT2};">${t2Score.toFixed(2)}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">PTS</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    grid.innerHTML = html || `<p style="color: var(--text-muted);">No matchups found for Week ${selectedWeek}.</p>`;
+}
 
         function calculateTeamStats() {
             let stats = {};
@@ -3782,73 +4000,7 @@ const raw2025Matchups = [
     { season: "2025", week: "16", owner: "Aaron", opponentOwner: "Ruck", score: "123.60 - 172.88", type: "playoff" },
     { season: "2025", week: "17", owner: "Mario", opponentOwner: "Ruck", score: "99.30 - 114.56", type: "playoff" },
     { season: "2025", week: "17", owner: "Matt", opponentOwner: "Aaron", score: "119.12 - 85.04", type: "playoff" }
-];
-
-
-function renderPastSeasonMatchups(year) {
-    const grid = document.getElementById(`past-season-${year}-matchups-grid`);
-    const weekSelect = document.getElementById(`season-${year}-week-select`);
-    if (!grid || !weekSelect) return;
-
-    const selectedWeek = weekSelect.value;
-    
-    let dataset = [];
-    if (year === "2019") dataset = raw2019Matchups;
-    else if (year === "2020") dataset = raw2020Matchups;
-    else if (year === "2021") dataset = raw2021Matchups;
-    else if (year === "2022") dataset = raw2022Matchups;
-    else if (year === "2023") dataset = raw2023Matchups;
-    else if (year === "2024") dataset = raw2024Matchups;
-    else if (year === "2025") dataset = raw2025Matchups;
-
-    const weekMatches = dataset.filter(m => m.week === selectedWeek);
-    // ... rest of your rendering code remains the same
-
-    if (weekMatches.length === 0) {
-        grid.innerHTML = `<p style="color: var(--text-muted); font-style: italic;">No matchup records found for Week ${selectedWeek}.</p>`;
-        return;
-    }
-
-    let uniquePairs = [];
-    let seen = new Set();
-    weekMatches.forEach(m => {
-        let pairKey = [m.owner.toLowerCase(), m.opponentOwner.toLowerCase()].sort().join('|');
-        if (!seen.has(pairKey)) {
-            seen.add(pairKey);
-            uniquePairs.push(m);
-        }
-    });
-
-    grid.innerHTML = uniquePairs.map(m => {
-        let scores = m.score.split(" - ");
-        let teamScore = parseFloat(scores[0]) || 0;
-        let oppScore = parseFloat(scores[1]) || 0;
-
-        let colorTeam = teamScore > oppScore ? '#c5a059' : 'var(--text-main)';
-        let colorOpp = oppScore > teamScore ? '#c5a059' : 'var(--text-main)';
-
-        return `
-            <div class="duel-card">
-                <div class="duel-header">
-                    <span class="duel-house">${formatNameWithBanner(m.owner)}</span>
-                    <span class="duel-vs">vs</span>
-                    <span class="duel-house" style="text-align:right;">${formatNameWithBanner(m.opponentOwner)}</span>
-                </div>
-                <div class="duel-stats" style="display:flex; justify-content:space-around; padding: 0.8rem 0; background:#0f1115; border:1px solid #2c2f3b;">
-                    <div style="text-align:center;">
-                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">${m.owner}</div>
-                        <div style="font-size:1.1rem; font-weight:bold; color:${colorTeam};">${teamScore.toFixed(2)}</div>
-                    </div>
-                    <div style="display:flex; align-items:center; color:var(--text-muted);">–</div>
-                    <div style="text-align:center;">
-                        <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase;">${m.opponentOwner}</div>
-                        <div style="font-size:1.1rem; font-weight:bold; color:${colorOpp};">${oppScore.toFixed(2)}</div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}        
+];        
 
 function renderPastSeasonsDropdownAndPages() {
             const dropdownContainer = document.getElementById('past-seasons-dropdown');
@@ -3967,50 +4119,69 @@ function renderPastSeasonsDropdownAndPages() {
                     </div>
                 `;
 
-                let archivedWeeklyScoresHtml = details.archivedWeeklyScores ? `
-                    <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Archived Weekly Scores</h3>
-                    <div class="matchups-grid">${details.archivedWeeklyScores}</div>
-                ` : '';
+                let archivedWeeklyScoresHtml = `
+    <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Weekly Matchup Scores</h3>
+    <div class="page-header" style="border-bottom: none; margin-bottom: 1rem;">
+        <div class="action-btn-group">
+            <select id="season-${year}-week-select" onchange="renderArchivedSeasonMatchups('${year}')" style="background:#0c0d10; border:1px solid var(--border-gold); color:var(--text-main); padding:0.4rem 0.8rem; font-family:'Cinzel',serif;">
+                <option value="1">Week 1</option>
+                <option value="2">Week 2</option>
+                <option value="3">Week 3</option>
+                <option value="4">Week 4</option>
+                <option value="5">Week 5</option>
+                <option value="6">Week 6</option>
+                <option value="7">Week 7</option>
+                <option value="8">Week 8</option>
+                <option value="9">Week 9</option>
+                <option value="10">Week 10</option>
+                <option value="11">Week 11</option>
+                <option value="12">Week 12</option>
+                <option value="13">Week 13</option>
+                <option value="14">Week 14</option>
+                <option value="15">Playoff Rd 1 (W15)</option>
+                <option value="16">Playoff Semis (W16)</option>
+                <option value="17">Championship (W17)</option>
+            </select>
+        </div>
+    </div>
+    <div class="matchups-grid" id="past-season-${year}-matchups-grid"></div>
+`;
 
-               // Dynamic injection of weekly matchup scores for past seasons using static arrays
-    let yearMatchupsSection = '';
-    if (["2019", "2020", "2021", "2022", "2023", "2024", "2025"].includes(year)) {
-        yearMatchupsSection = `
-            <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Weekly Matchup Scores</h3>
-            <div class="page-header" style="border-bottom: none; margin-bottom: 1rem;">
-                <div class="action-btn-group">
-                    <select id="season-${year}-week-select" onchange="renderPastSeasonMatchups('${year}')" style="background:#0c0d10; border:1px solid var(--border-gold); color:var(--text-main); padding:0.4rem 0.8rem; font-family:'Cinzel',serif;">
-                        <option value="1">Week 1</option>
-                        <option value="2">Week 2</option>
-                        <option value="3">Week 3</option>
-                        <option value="4">Week 4</option>
-                        <option value="5">Week 5</option>
-                        <option value="6">Week 6</option>
-                        <option value="7">Week 7</option>
-                        <option value="8">Week 8</option>
-                        <option value="9">Week 9</option>
-                        <option value="10">Week 10</option>
-                        <option value="11">Week 11</option>
-                        <option value="12">Week 12</option>
-                        <option value="13">Week 13</option>
-                        <option value="14">Week 14</option>
-                        <option value="15">Week 15</option>
-                        <option value="16">Week 16</option>
-                        <option value="17">Week 17</option>
-                    </select>
-                </div>
-            </div>
-            <div class="matchups-grid" id="past-season-${year}-matchups-grid"></div>
-        `;
-    }
+                let yearMatchupsSection = `
+                    <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin: 2rem 0 1rem 0;">Weekly Matchup Scores</h3>
+                    <div class="page-header" style="border-bottom: none; margin-bottom: 1rem;">
+                        <div class="action-btn-group">
+                            <select id="season-${year}-week-select" onchange="renderArchivedSeasonMatchups('${year}')" style="background:#0c0d10; border:1px solid var(--border-gold); color:var(--text-main); padding:0.4rem 0.8rem; font-family:'Cinzel',serif;">
+                                <option value="1">Week 1</option>
+                                <option value="2">Week 2</option>
+                                <option value="3">Week 3</option>
+                                <option value="4">Week 4</option>
+                                <option value="5">Week 5</option>
+                                <option value="6">Week 6</option>
+                                <option value="7">Week 7</option>
+                                <option value="8">Week 8</option>
+                                <option value="9">Week 9</option>
+                                <option value="10">Week 10</option>
+                                <option value="11">Week 11</option>
+                                <option value="12">Week 12</option>
+                                <option value="13">Week 13</option>
+                                <option value="14">Week 14</option>
+                                <option value="15">Playoff Rd 1 (W15)</option>
+                                <option value="16">Playoff Semis (W16)</option>
+                                <option value="17">Championship (W17)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="matchups-grid" id="past-season-${year}-matchups-grid"></div>
+                `;
 
                 pagesHtml += `
                     <section id="past-season-${year}" class="page">
                         <div class="page-header">
                             <h2>${year} Season</h2>
-			<div class="action-btn-group">
-    			<button class="action-btn danger-btn" onclick="requestPassword('delete-season-${year}')">🗑️ Delete Season</button>
-			</div>
+                            <div class="action-btn-group">
+                                <button class="action-btn danger-btn" onclick="requestPassword('delete-season-${year}')">🗑️ Delete Season</button>
+                            </div>
                         </div>
                         <h3 style="font-family:'Cinzel',serif; color:var(--border-gold); margin-bottom:1rem;">Playoff Bracket</h3>
                         <div class="bracket-container">
@@ -4031,7 +4202,6 @@ function renderPastSeasonsDropdownAndPages() {
                             </table>
                         </div>
                         ${yearMatchupsSection}
-                        ${archivedWeeklyScoresHtml}
                     </section>
                 `;
             });
@@ -4039,10 +4209,10 @@ function renderPastSeasonsDropdownAndPages() {
             dropdownContainer.innerHTML = dropdownHtml;
             pagesContainer.innerHTML = pagesHtml;
 
-            // Trigger initial render for all past season matchups using static arrays
-            ["2019", "2020", "2021", "2022", "2023", "2024", "2025"].forEach(yr => {
+            // Trigger initial render for all past season matchups using dynamic archived data
+            years.forEach(yr => {
                 if (document.getElementById(`past-season-${yr}-matchups-grid`)) {
-                    renderPastSeasonMatchups(yr);
+                    renderArchivedSeasonMatchups(yr);
                 }
             });
 }
@@ -4731,27 +4901,34 @@ function renderPastSeasonsDropdownAndPages() {
             }
         }
 
-async function deleteGazetteEntry() {
-    if (!confirm("Are you sure you want to delete the current Gazette dispatch?")) return;
-    
-    // Clear out or reset the gazette data object
-    realmData.gazette = {
-        title: "No Active Dispatch",
-        author: "Grand Maester",
-        content: "The realm is currently peaceful. No new dispatches have been published."
-    };
+async function deleteGazetteEntry(postId) {
+    if (!realmData.gazettePosts || realmData.gazettePosts.length === 0) {
+        alert("No dispatches to delete.");
+        return;
+    }
+
+    // If an individual postId is passed, delete just that one post
+    if (postId) {
+        if (!confirm("Are you sure you want to delete this dispatch?")) return;
+        realmData.gazettePosts = realmData.gazettePosts.filter(p => p.id !== postId);
+    } 
+    // Otherwise, handle batch deletion using checked checkboxes
+    else {
+        const checkboxes = document.querySelectorAll('.gazette-select:checked');
+        if (checkboxes.length === 0) {
+            alert("No dispatches selected for deletion.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete the ${checkboxes.length} selected dispatch(es)?`)) return;
+
+        let idsToDelete = Array.from(checkboxes).map(cb => Number(cb.value));
+        realmData.gazettePosts = realmData.gazettePosts.filter(p => !idsToDelete.includes(p.id));
+    }
 
     await saveRealmData(realmData);
-    
-    // Close editor if open and re-render
-    editModes.gazette = false;
-    const container = document.getElementById('gazette-edit-container');
-    if (container) container.classList.remove('active');
-    const btn = document.getElementById('btn-gazette-edit');
-    if (btn) btn.textContent = "⚙️ Edit";
-    
     renderGazette();
-    alert("Gazette dispatch has been deleted.");
+    alert("Gazette dispatch(es) successfully deleted.");
 }
     </script>
 </body>
