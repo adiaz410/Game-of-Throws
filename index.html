@@ -1989,94 +1989,92 @@ function renderH2H() {
         }
 
         async function concludeCurrentSeason() {
-    if (!confirm("Are you sure you want to conclude the current season, archive it into history, and reset for a new season?")) return;
-    
-    let cs = realmData.currentSeason;
-    let yr = cs.year || "2026";
+            if (!confirm("Are you sure you want to conclude the current season, archive it into history, and reset for a new season?")) return;
+            
+            let cs = realmData.currentSeason;
+            let yr = cs.year || "2026";
 
-    syncBracketData(cs);
+            // Fully sync and lock the final state of the bracket right now
+            syncBracketData(cs);
 
-    let leagueId = realmData.sleeperLeagueId;
-    let archivedMatchups = [];
+            let leagueId = realmData.sleeperLeagueId;
+            let archivedMatchups = [];
 
-    if (leagueId) {
-        try {
-            // Fetch users, rosters, and all weekly matchups concurrently
-            let weekPromises = [];
-            for (let w = 1; w <= 17; w++) {
-                weekPromises.push(fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${w}`).then(res => res.json()).catch(() => []));
+            if (leagueId) {
+                try {
+                    let weekPromises = [];
+                    for (let w = 1; w <= 17; w++) {
+                        weekPromises.push(fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${w}`).then(res => res.json()).catch(() => []));
+                    }
+
+                    const [usersRes, rostersRes, ...allWeeksData] = await Promise.all([
+                        fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
+                        fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
+                        ...weekPromises
+                    ]);
+
+                    let users = usersRes.ok ? await usersRes.json() : [];
+                    let rosters = rostersRes.ok ? await rostersRes.json() : [];
+
+                    let userMap = {};
+                    users.forEach(u => { userMap[u.user_id] = u.display_name || u.username; });
+
+                    let rosterToHouseMap = {};
+                    rosters.forEach(r => {
+                        let ownerName = userMap[r.owner_id] || `Roster #${r.roster_id}`;
+                        let assignedHouse = SLEEPER_AUTO_HOUSE_MAP[r.owner_id] || 
+                                             SLEEPER_AUTO_HOUSE_MAP[ownerName] || 
+                                             (realmData.sleeperMappings ? realmData.sleeperMappings[r.roster_id] : null) || 
+                                             ownerName;
+                        rosterToHouseMap[r.roster_id] = assignedHouse;
+                    });
+
+                    allWeeksData.forEach((weekMatchups, index) => {
+                        let wkNum = index + 1;
+                        if (Array.isArray(weekMatchups)) {
+                            weekMatchups.forEach(m => {
+                                let resolvedHouse = rosterToHouseMap[m.roster_id] || `Roster #${m.roster_id}`;
+                                archivedMatchups.push({ 
+                                    season: yr, 
+                                    week: wkNum.toString(), 
+                                    houseName: resolvedHouse,
+                                    ...m 
+                                });
+                            });
+                        }
+                    });
+                } catch (e) {
+                    console.error("Could not fetch full Sleeper history during conclusion:", e);
+                }
             }
 
-            const [usersRes, rostersRes, ...allWeeksData] = await Promise.all([
-                fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
-                fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
-                ...weekPromises
-            ]);
+            // Save a deep-cloned static snapshot so past brackets never change again
+            realmData.pastSeasonDetails[yr] = JSON.parse(JSON.stringify(cs));
+            realmData.pastSeasonDetails[yr].archivedMatchups = archivedMatchups;
+            realmData.pastSeasonDetails[yr].isLocked = true; // Flag to lock historical bracket
+            
+            if (!realmData.seasons.some(s => s.year === yr)) {
+                realmData.seasons.unshift({ year: yr });
+            }
 
-            let users = usersRes.ok ? await usersRes.json() : [];
-            let rosters = rostersRes.ok ? await rostersRes.json() : [];
+            let nextYr = (parseInt(yr) + 1).toString();
+            realmData.currentSeason = {
+                year: nextYr,
+                standings: realmData.standings.filter(s => s.status !== 'exiled to Essos').map(s => ({ team: s.team, owner: s.team, w: 0, l: 0, pts: 0, against: 0 })),
+                quarterfinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
+                semifinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
+                thirdPlaceGame: { t1: "", t2: "", winner: 0 },
+                championship: { t1: "", t2: "", winner: 0 }
+            };
 
-            let userMap = {};
-            users.forEach(u => { 
-                userMap[u.user_id] = u.display_name || u.username; 
-            });
+            realmData.sleeperLeagueId = "";
+            realmData.sleeperMappings = {};
 
-            // Build a reliable roster ID to House Name mapping dictionary
-            let rosterToHouseMap = {};
-            rosters.forEach(r => {
-                let ownerName = userMap[r.owner_id] || `Roster #${r.roster_id}`;
-                let assignedHouse = SLEEPER_AUTO_HOUSE_MAP[r.owner_id] || 
-                                     SLEEPER_AUTO_HOUSE_MAP[ownerName] || 
-                                     (realmData.sleeperMappings ? realmData.sleeperMappings[r.roster_id] : null) || 
-                                     ownerName;
-                rosterToHouseMap[r.roster_id] = assignedHouse;
-            });
-
-            allWeeksData.forEach((weekMatchups, index) => {
-                let wkNum = index + 1;
-                if (Array.isArray(weekMatchups)) {
-                    weekMatchups.forEach(m => {
-                        // Attach the resolved house name directly to the matchup object
-                        let resolvedHouse = rosterToHouseMap[m.roster_id] || `Roster #${m.roster_id}`;
-                        archivedMatchups.push({ 
-                            season: yr, 
-                            week: wkNum.toString(), 
-                            houseName: resolvedHouse,
-                            ...m 
-                        });
-                    });
-                }
-            });
-        } catch (e) {
-            console.error("Could not fetch full Sleeper history during conclusion:", e);
+            await saveRealmData(realmData);
+            renderData();
+            alert(`Season ${yr} successfully concluded and archived into history! Current season updated to ${nextYr}.`);
+            switchPage('current-season');
         }
-    }
-
-    realmData.pastSeasonDetails[yr] = JSON.parse(JSON.stringify(cs));
-    realmData.pastSeasonDetails[yr].archivedMatchups = archivedMatchups;
-    
-    if (!realmData.seasons.some(s => s.year === yr)) {
-        realmData.seasons.unshift({ year: yr });
-    }
-
-    let nextYr = (parseInt(yr) + 1).toString();
-    realmData.currentSeason = {
-        year: nextYr,
-        standings: realmData.standings.filter(s => s.status !== 'exiled to Essos').map(s => ({ team: s.team, owner: s.team, w: 0, l: 0, pts: 0, against: 0 })),
-        quarterfinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
-        semifinals: [{ t1: "", t2: "", winner: 0 }, { t1: "", t2: "", winner: 0 }],
-        thirdPlaceGame: { t1: "", t2: "", winner: 0 },
-        championship: { t1: "", t2: "", winner: 0 }
-    };
-
-    realmData.sleeperLeagueId = "";
-    realmData.sleeperMappings = {};
-
-    await saveRealmData(realmData);
-    renderData();
-    alert(`Season ${yr} successfully concluded and archived into history! Current season updated to ${nextYr}. Sleeper configuration reset.`);
-    switchPage('current-season');
-}
 
         const teamsPages = ['teams', 'rankings', 'team-profiles'];
         const historyPages = ['h2h', 'standings', 'seasons', 'champions', 'accolades'];
@@ -3195,6 +3193,9 @@ function renderArchivedSeasonMatchups(year) {
         function syncBracketData(details) {
             if (!details || !details.standings || details.standings.length < 6) return;
 
+            if (!details.quarterfinals) details.quarterfinals = [];
+            if (!details.semifinals) details.semifinals = [];
+
             details.byes = [{ team: details.standings[0].team }, { team: details.standings[1].team }];
 
             if (!details.quarterfinals || details.quarterfinals.length < 2 || !details.quarterfinals[0].t1) {
@@ -3209,7 +3210,6 @@ function renderArchivedSeasonMatchups(year) {
                 details.quarterfinals[1].t2 = details.standings[4].team;
             }
 
-            // Detect if this is 2020 (Playoffs are Weeks 14, 15, 16 instead of 15, 16, 17)
             let yr = details.year || (realmData.seasons && realmData.seasons.find(s => realmData.pastSeasonDetails[s.year] === details)?.year);
             let rd1Week = yr === "2020" ? 14 : 15;
             let semisWeek = yr === "2020" ? 15 : 16;
@@ -3219,6 +3219,10 @@ function renderArchivedSeasonMatchups(year) {
                 let target1 = (t1 || "").trim().toLowerCase();
                 let target2 = (t2 || "").trim().toLowerCase();
                 
+                if (!target1 || !target2 || target1 === 'tbd' || target2 === 'tbd') {
+                    return { winner: 0, score1: undefined, score2: undefined };
+                }
+
                 let dataset = details.archivedMatchups;
                 if (!dataset || dataset.length === 0) {
                     if (yr === "2019") dataset = typeof raw2019Matchups !== 'undefined' ? raw2019Matchups : [];
@@ -3233,17 +3237,52 @@ function renderArchivedSeasonMatchups(year) {
                 if (!dataset || !Array.isArray(dataset)) return { winner: 0, score1: undefined, score2: undefined };
 
                 let weekMatches = dataset.filter(m => String(m.week) === String(weekNum));
+                let matchupPairs = {};
                 
+                weekMatches.forEach(m => {
+                    let mId = m.matchup_id || `${m.roster_id || m.owner}`;
+                    if (!matchupPairs[mId]) matchupPairs[mId] = [];
+                    matchupPairs[mId].push(m);
+                });
+
+                for (let mId in matchupPairs) {
+                    let pair = matchupPairs[mId];
+                    if (pair.length >= 2) {
+                        let p0House = (pair[0].houseName || pair[0].team1House || pair[0].owner || "").trim().toLowerCase();
+                        let p1House = (pair[1].houseName || pair[1].team2House || pair[1].opponentOwner || "").trim().toLowerCase();
+
+                        let match0T1 = p0House.includes(target1) || target1.includes(p0House);
+                        let match1T2 = p1House.includes(target2) || target2.includes(p1House);
+                        let match0T2 = p0House.includes(target2) || target2.includes(p0House);
+                        let match1T1 = p1House.includes(target1) || target1.includes(p1House);
+
+                        if ((match0T1 && match1T2) || (match0T2 && match1T1)) {
+                            let objA = pair[0];
+                            let objB = pair[1];
+                            let aHouse = (objA.houseName || objA.team1House || objA.owner || "").trim().toLowerCase();
+
+                            let aIsTarget1 = aHouse.includes(target1) || target1.includes(aHouse);
+                            let scoreTarget1 = aIsTarget1 ? Number(objA.points) : Number(objB.points);
+                            let scoreTarget2 = aIsTarget1 ? Number(objB.points) : Number(objA.points);
+
+                            scoreTarget1 = isNaN(scoreTarget1) ? 0 : scoreTarget1;
+                            scoreTarget2 = isNaN(scoreTarget2) ? 0 : scoreTarget2;
+
+                            let win = 0;
+                            if (scoreTarget1 > scoreTarget2) win = 1;
+                            else if (scoreTarget2 > scoreTarget1) win = 2;
+
+                            return { winner: win, score1: scoreTarget1, score2: scoreTarget2 };
+                        }
+                    }
+                }
+
+                // Fallback for flat custom items
                 for (let m of weekMatches) {
-                    let o1 = (m.houseName || m.owner || m.house || "").trim().toLowerCase();
+                    let o1 = (m.houseName || m.team1House || m.owner || m.house || "").trim().toLowerCase();
                     let o2 = (m.team2House || m.opponentOwner || m.opponent || "").trim().toLowerCase();
 
-                    let match1 = o1.includes(target1) || target1.includes(o1);
-                    let match2 = o2.includes(target2) || target2.includes(o2);
-                    let cross1 = o1.includes(target2) || target2.includes(o1);
-                    let cross2 = o2.includes(target1) || target1.includes(o2);
-
-                    if ((match1 && match2) || (cross1 && cross2)) {
+                    if ((o1.includes(target1) && o2.includes(target2)) || (o1.includes(target2) && o2.includes(target1))) {
                         let s1 = 0, s2 = 0;
                         if (m.score && typeof m.score === 'string') {
                             let parts = m.score.split(" - ");
@@ -3259,8 +3298,8 @@ function renderArchivedSeasonMatchups(year) {
                         let finalS2 = isO1Target ? s2 : s1;
 
                         let win = 0;
-                        if (finalS1 > finalS2) win = 1;
-                        else if (finalS2 > finalS1) win = 2;
+                        if (Number(finalS1) > Number(finalS2)) win = 1;
+                        else if (Number(finalS2) > Number(finalS1)) win = 2;
 
                         return { winner: win, score1: Number(finalS1), score2: Number(finalS2) };
                     }
@@ -3269,21 +3308,26 @@ function renderArchivedSeasonMatchups(year) {
                 return { winner: 0, score1: undefined, score2: undefined };
             };
 
-            // 1. Auto-resolve Quarterfinals
+            // 1. Resolve Quarterfinals (Week 15)
             details.quarterfinals.forEach((qf) => {
                 let res = resolveMatchupData(qf.t1, qf.t2, rd1Week);
-                if (!qf.winner || qf.winner === 0) qf.winner = res.winner;
                 qf.score1 = res.score1;
                 qf.score2 = res.score2;
+                if (res.score1 !== undefined && res.score2 !== undefined && res.score1 !== res.score2) {
+                    qf.winner = res.score1 > res.score2 ? 1 : 2;
+                } else if (!qf.winner || qf.winner === 0) {
+                    qf.winner = res.winner;
+                }
             });
 
-            let qf0Winner = details.quarterfinals[0].winner;
-            let qf1Winner = details.quarterfinals[1].winner;
-            let qf0WinnerTeam = qf0Winner === 2 ? details.quarterfinals[0].t2 : (qf0Winner === 1 ? details.quarterfinals[0].t1 : "");
-            let qf1WinnerTeam = qf1Winner === 2 ? details.quarterfinals[1].t2 : (qf1Winner === 1 ? details.quarterfinals[1].t1 : "");
+            let qf0 = details.quarterfinals[0] || { t1: "", t2: "", winner: 0, score1: 0, score2: 0 };
+            let qf1 = details.quarterfinals[1] || { t1: "", t2: "", winner: 0, score1: 0, score2: 0 };
 
-            let rankQf0 = qf0WinnerTeam ? details.standings.findIndex(st => st.team === qf0WinnerTeam) : -1;
-            let rankQf1 = qf1WinnerTeam ? details.standings.findIndex(st => st.team === qf1WinnerTeam) : -1;
+            let qf0WinnerTeam = qf0.winner === 2 ? qf0.t2 : (qf0.winner === 1 ? qf0.t1 : (Number(qf0.score2 || 0) > Number(qf0.score1 || 0) ? qf0.t2 : qf0.t1));
+            let qf1WinnerTeam = qf1.winner === 2 ? qf1.t2 : (qf1.winner === 1 ? qf1.t1 : (Number(qf1.score2 || 0) > Number(qf1.score1 || 0) ? qf1.t2 : qf1.t1));
+
+            let rankQf0 = qf0WinnerTeam ? details.standings.findIndex(st => st.team.trim().toLowerCase() === qf0WinnerTeam.trim().toLowerCase()) : -1;
+            let rankQf1 = qf1WinnerTeam ? details.standings.findIndex(st => st.team.trim().toLowerCase() === qf1WinnerTeam.trim().toLowerCase()) : -1;
 
             let semi1TeamA = details.byes[0].team; 
             let semi2TeamA = details.byes[1].team; 
@@ -3298,57 +3342,316 @@ function renderArchivedSeasonMatchups(year) {
                     semi1TeamB = qf1WinnerTeam;
                     semi2TeamB = qf0WinnerTeam;
                 }
-            }
-
-            if (!details.semifinals || details.semifinals.length < 2 || !details.semifinals[0].t1) {
-                details.semifinals = [{ t1: semi1TeamA, t2: semi1TeamB, winner: 0 }, { t1: semi2TeamA, t2: semi2TeamB, winner: 0 }];
             } else {
-                details.semifinals[0].t1 = semi1TeamA; details.semifinals[0].t2 = semi1TeamB;
-                details.semifinals[1].t1 = semi2TeamA; details.semifinals[1].t2 = semi2TeamB;
+                semi1TeamB = qf0WinnerTeam || qf1WinnerTeam || "";
+                semi2TeamB = qf1WinnerTeam || qf0WinnerTeam || "";
             }
 
-            // 2. Auto-resolve Semifinals
+            if (!details.semifinals || details.semifinals.length < 2) {
+                details.semifinals = [
+                    { t1: semi1TeamA, t2: semi1TeamB, winner: 0 }, 
+                    { t1: semi2TeamA, t2: semi2TeamB, winner: 0 }
+                ];
+            } else {
+                details.semifinals[0].t1 = semi1TeamA; 
+                details.semifinals[0].t2 = semi1TeamB;
+                details.semifinals[1].t1 = semi2TeamA; 
+                details.semifinals[1].t2 = semi2TeamB;
+            }
+
+            // 2. Resolve Semifinals (Week 16)
             details.semifinals.forEach((sf) => {
                 if (sf.t1 && sf.t2) {
                     let res = resolveMatchupData(sf.t1, sf.t2, semisWeek);
-                    if (!sf.winner || sf.winner === 0) sf.winner = res.winner;
                     sf.score1 = res.score1;
                     sf.score2 = res.score2;
+                    if (res.score1 !== undefined && res.score2 !== undefined && res.score1 !== res.score2) {
+                        sf.winner = res.score1 > res.score2 ? 1 : 2;
+                    } else if (!sf.winner || sf.winner === 0) {
+                        sf.winner = res.winner;
+                    }
                 }
             });
 
-            let s0Winner = details.semifinals[0].winner;
-            let s1Winner = details.semifinals[1].winner;
-            let semi0WinnerTeam = s0Winner === 2 ? details.semifinals[0].t2 : (s0Winner === 1 ? details.semifinals[0].t1 : "");
-            let semi0LoserTeam = s0Winner === 2 ? details.semifinals[0].t1 : (s0Winner === 1 ? details.semifinals[0].t2 : "");
-            let semi1WinnerTeam = s1Winner === 2 ? details.semifinals[1].t2 : (s1Winner === 1 ? details.semifinals[1].t1 : "");
-            let semi1LoserTeam = s1Winner === 2 ? details.semifinals[1].t1 : (s1Winner === 1 ? details.semifinals[1].t2 : "");
+            let s0 = details.semifinals[0] || { t1: "", t2: "", winner: 0, score1: 0, score2: 0 };
+            let s1 = details.semifinals[1] || { t1: "", t2: "", winner: 0, score1: 0, score2: 0 };
 
-            if (!details.championship || !details.championship.t1) {
-                details.championship = { t1: semi0WinnerTeam, t2: semi1WinnerTeam, winner: 0 };
-            } else {
-                details.championship.t1 = semi0WinnerTeam; details.championship.t2 = semi1WinnerTeam;
+            let s0S1 = Number(s0.score1) || 0;
+            let s0S2 = Number(s0.score2) || 0;
+            let semi0WinnerTeam = s0.winner === 2 ? s0.t2 : (s0.winner === 1 ? s0.t1 : (s0S2 > s0S1 ? s0.t2 : s0.t1));
+            let semi0LoserTeam = semi0WinnerTeam === s0.t1 ? s0.t2 : s0.t1;
+
+            let s1S1 = Number(s1.score1) || 0;
+            let s1S2 = Number(s1.score2) || 0;
+            let semi1WinnerTeam = s1.winner === 2 ? s1.t2 : (s1.winner === 1 ? s1.t1 : (s1S2 > s1S1 ? s1.t2 : s1.t1));
+            let semi1LoserTeam = semi1WinnerTeam === s1.t1 ? s1.t2 : s1.t1;
+
+            if (!details.championship) {
+                details.championship = { t1: "", t2: "", winner: 0 };
             }
+            details.championship.t1 = semi0WinnerTeam || details.semifinals[0].t1 || ""; 
+            details.championship.t2 = semi1WinnerTeam || details.semifinals[1].t2 || "";
 
-            // 3. Auto-resolve Championship & Third Place
+            // 3. Resolve Championship & Third Place (Week 17)
             if (details.championship.t1 && details.championship.t2) {
                 let res = resolveMatchupData(details.championship.t1, details.championship.t2, champWeek);
-                if (!details.championship.winner || details.championship.winner === 0) details.championship.winner = res.winner;
                 details.championship.score1 = res.score1;
                 details.championship.score2 = res.score2;
+                if (res.score1 !== undefined && res.score2 !== undefined && res.score1 !== res.score2) {
+                    details.championship.winner = res.score1 > res.score2 ? 1 : 2;
+                } else if (!details.championship.winner || details.championship.winner === 0) {
+                    details.championship.winner = res.winner;
+                }
             }
 
-            if (!details.thirdPlaceGame || !details.thirdPlaceGame.t1) {
-                details.thirdPlaceGame = { t1: semi0LoserTeam, t2: semi1LoserTeam, winner: 0 };
-            } else {
-                details.thirdPlaceGame.t1 = semi0LoserTeam; details.thirdPlaceGame.t2 = semi1LoserTeam;
+            if (!details.thirdPlaceGame) {
+                details.thirdPlaceGame = { t1: "", t2: "", winner: 0 };
             }
+            details.thirdPlaceGame.t1 = semi0LoserTeam; 
+            details.thirdPlaceGame.t2 = semi1LoserTeam;
 
             if (details.thirdPlaceGame.t1 && details.thirdPlaceGame.t2) {
                 let res = resolveMatchupData(details.thirdPlaceGame.t1, details.thirdPlaceGame.t2, champWeek);
-                if (!details.thirdPlaceGame.winner || details.thirdPlaceGame.winner === 0) details.thirdPlaceGame.winner = res.winner;
                 details.thirdPlaceGame.score1 = res.score1;
                 details.thirdPlaceGame.score2 = res.score2;
+                if (res.score1 !== undefined && res.score2 !== undefined && res.score1 !== res.score2) {
+                    details.thirdPlaceGame.winner = res.score1 > res.score2 ? 1 : 2;
+                } else if (!details.thirdPlaceGame.winner || details.thirdPlaceGame.winner === 0) {
+                    details.thirdPlaceGame.winner = res.winner;
+                }
+            }
+        }
+
+ function syncBracketData(details) {
+            if (!details || !details.standings || details.standings.length < 6) return;
+
+            if (!details.quarterfinals) details.quarterfinals = [];
+            if (!details.semifinals) details.semifinals = [];
+
+            details.byes = [{ team: details.standings[0].team }, { team: details.standings[1].team }];
+
+            if (!details.quarterfinals || details.quarterfinals.length < 2 || !details.quarterfinals[0].t1) {
+                details.quarterfinals = [
+                    { t1: details.standings[2].team, t2: details.standings[5].team, winner: 0 },
+                    { t1: details.standings[3].team, t2: details.standings[4].team, winner: 0 }
+                ];
+            } else {
+                details.quarterfinals[0].t1 = details.standings[2].team;
+                details.quarterfinals[0].t2 = details.standings[5].team;
+                details.quarterfinals[1].t1 = details.standings[3].team;
+                details.quarterfinals[1].t2 = details.standings[4].team;
+            }
+
+            let yr = details.year || (realmData.seasons && realmData.seasons.find(s => realmData.pastSeasonDetails[s.year] === details)?.year);
+            let rd1Week = yr === "2020" ? 14 : 15;
+            let semisWeek = yr === "2020" ? 15 : 16;
+            let champWeek = yr === "2020" ? 16 : 17;
+
+            const resolveMatchupData = (t1, t2, weekNum) => {
+                let target1 = (t1 || "").trim().toLowerCase();
+                let target2 = (t2 || "").trim().toLowerCase();
+                
+                if (!target1 || !target2 || target1 === 'tbd' || target2 === 'tbd') {
+                    return { winner: 0, score1: undefined, score2: undefined };
+                }
+
+                let dataset = details.archivedMatchups;
+                if (!dataset || dataset.length === 0) {
+                    if (yr === "2019") dataset = typeof raw2019Matchups !== 'undefined' ? raw2019Matchups : [];
+                    else if (yr === "2020") dataset = typeof raw2020Matchups !== 'undefined' ? raw2020Matchups : [];
+                    else if (yr === "2021") dataset = typeof raw2021Matchups !== 'undefined' ? raw2021Matchups : [];
+                    else if (yr === "2022") dataset = typeof raw2022Matchups !== 'undefined' ? raw2022Matchups : [];
+                    else if (yr === "2023") dataset = typeof raw2023Matchups !== 'undefined' ? raw2023Matchups : [];
+                    else if (yr === "2024") dataset = typeof raw2024Matchups !== 'undefined' ? raw2024Matchups : [];
+                    else if (yr === "2025") dataset = typeof raw2025Matchups !== 'undefined' ? raw2025Matchups : [];
+                }
+
+                if (!dataset || !Array.isArray(dataset)) return { winner: 0, score1: undefined, score2: undefined };
+
+                let weekMatches = dataset.filter(m => String(m.week) === String(weekNum));
+                let matchupPairs = {};
+                
+                weekMatches.forEach(m => {
+                    let mId = m.matchup_id || `${m.roster_id || m.owner}`;
+                    if (!matchupPairs[mId]) matchupPairs[mId] = [];
+                    matchupPairs[mId].push(m);
+                });
+
+                for (let mId in matchupPairs) {
+                    let pair = matchupPairs[mId];
+                    if (pair.length >= 2) {
+                        let p0House = (pair[0].houseName || pair[0].team1House || pair[0].owner || "").trim().toLowerCase();
+                        let p1House = (pair[1].houseName || pair[1].team2House || pair[1].opponentOwner || "").trim().toLowerCase();
+
+                        let match0T1 = p0House.includes(target1) || target1.includes(p0House);
+                        let match1T2 = p1House.includes(target2) || target2.includes(p1House);
+                        let match0T2 = p0House.includes(target2) || target2.includes(p0House);
+                        let match1T1 = p1House.includes(target1) || target1.includes(p1House);
+
+                        if ((match0T1 && match1T2) || (match0T2 && match1T1)) {
+                            let objA = pair[0];
+                            let objB = pair[1];
+                            let aHouse = (objA.houseName || objA.team1House || objA.owner || "").trim().toLowerCase();
+
+                            let aIsTarget1 = aHouse.includes(target1) || target1.includes(aHouse);
+                            let scoreTarget1 = aIsTarget1 ? Number(objA.points) : Number(objB.points);
+                            let scoreTarget2 = aIsTarget1 ? Number(objB.points) : Number(objA.points);
+
+                            scoreTarget1 = isNaN(scoreTarget1) ? 0 : scoreTarget1;
+                            scoreTarget2 = isNaN(scoreTarget2) ? 0 : scoreTarget2;
+
+                            let win = 0;
+                            if (scoreTarget1 > scoreTarget2) win = 1;
+                            else if (scoreTarget2 > scoreTarget1) win = 2;
+
+                            return { winner: win, score1: scoreTarget1, score2: scoreTarget2 };
+                        }
+                    }
+                }
+
+                // Fallback for flat custom items
+                for (let m of weekMatches) {
+                    let o1 = (m.houseName || m.team1House || m.owner || m.house || "").trim().toLowerCase();
+                    let o2 = (m.team2House || m.opponentOwner || m.opponent || "").trim().toLowerCase();
+
+                    if ((o1.includes(target1) && o2.includes(target2)) || (o1.includes(target2) && o2.includes(target1))) {
+                        let s1 = 0, s2 = 0;
+                        if (m.score && typeof m.score === 'string') {
+                            let parts = m.score.split(" - ");
+                            s1 = parseFloat(parts[0]) || 0;
+                            s2 = parseFloat(parts[1]) || 0;
+                        } else {
+                            s1 = m.score1 !== undefined ? m.score1 : (m.points || 0);
+                            s2 = m.score2 !== undefined ? m.score2 : (m.points || 0);
+                        }
+
+                        let isO1Target = o1.includes(target1) || target1.includes(o1);
+                        let finalS1 = isO1Target ? s1 : s2;
+                        let finalS2 = isO1Target ? s2 : s1;
+
+                        let win = 0;
+                        if (Number(finalS1) > Number(finalS2)) win = 1;
+                        else if (Number(finalS2) > Number(finalS1)) win = 2;
+
+                        return { winner: win, score1: Number(finalS1), score2: Number(finalS2) };
+                    }
+                }
+
+                return { winner: 0, score1: undefined, score2: undefined };
+            };
+
+            // 1. Resolve Quarterfinals (Week 15)
+            details.quarterfinals.forEach((qf) => {
+                let res = resolveMatchupData(qf.t1, qf.t2, rd1Week);
+                qf.score1 = res.score1;
+                qf.score2 = res.score2;
+                if (res.score1 !== undefined && res.score2 !== undefined && res.score1 !== res.score2) {
+                    qf.winner = res.score1 > res.score2 ? 1 : 2;
+                } else if (!qf.winner || qf.winner === 0) {
+                    qf.winner = res.winner;
+                }
+            });
+
+            let qf0 = details.quarterfinals[0] || { t1: "", t2: "", winner: 0, score1: 0, score2: 0 };
+            let qf1 = details.quarterfinals[1] || { t1: "", t2: "", winner: 0, score1: 0, score2: 0 };
+
+            let qf0WinnerTeam = qf0.winner === 2 ? qf0.t2 : (qf0.winner === 1 ? qf0.t1 : (Number(qf0.score2 || 0) > Number(qf0.score1 || 0) ? qf0.t2 : qf0.t1));
+            let qf1WinnerTeam = qf1.winner === 2 ? qf1.t2 : (qf1.winner === 1 ? qf1.t1 : (Number(qf1.score2 || 0) > Number(qf1.score1 || 0) ? qf1.t2 : qf1.t1));
+
+            let rankQf0 = qf0WinnerTeam ? details.standings.findIndex(st => st.team.trim().toLowerCase() === qf0WinnerTeam.trim().toLowerCase()) : -1;
+            let rankQf1 = qf1WinnerTeam ? details.standings.findIndex(st => st.team.trim().toLowerCase() === qf1WinnerTeam.trim().toLowerCase()) : -1;
+
+            let semi1TeamA = details.byes[0].team; 
+            let semi2TeamA = details.byes[1].team; 
+            let semi1TeamB = "";
+            let semi2TeamB = "";
+
+            if (qf0WinnerTeam && qf1WinnerTeam) {
+                if (rankQf0 > rankQf1) {
+                    semi1TeamB = qf0WinnerTeam;
+                    semi2TeamB = qf1WinnerTeam;
+                } else {
+                    semi1TeamB = qf1WinnerTeam;
+                    semi2TeamB = qf0WinnerTeam;
+                }
+            } else {
+                semi1TeamB = qf0WinnerTeam || qf1WinnerTeam || "";
+                semi2TeamB = qf1WinnerTeam || qf0WinnerTeam || "";
+            }
+
+            if (!details.semifinals || details.semifinals.length < 2) {
+                details.semifinals = [
+                    { t1: semi1TeamA, t2: semi1TeamB, winner: 0 }, 
+                    { t1: semi2TeamA, t2: semi2TeamB, winner: 0 }
+                ];
+            } else {
+                details.semifinals[0].t1 = semi1TeamA; 
+                details.semifinals[0].t2 = semi1TeamB || details.semifinals[0].t2;
+                details.semifinals[1].t1 = semi2TeamA; 
+                details.semifinals[1].t2 = semi2TeamB || details.semifinals[1].t2;
+            }
+
+            // 2. Resolve Semifinals (Week 16)
+            details.semifinals.forEach((sf) => {
+                if (sf.t1 && sf.t2) {
+                    let res = resolveMatchupData(sf.t1, sf.t2, semisWeek);
+                    sf.score1 = res.score1;
+                    sf.score2 = res.score2;
+                    if (res.score1 !== undefined && res.score2 !== undefined && res.score1 !== res.score2) {
+                        sf.winner = res.score1 > res.score2 ? 1 : 2;
+                    } else if (!sf.winner || sf.winner === 0) {
+                        sf.winner = res.winner;
+                    }
+                }
+            });
+
+            let s0 = details.semifinals[0] || { t1: "", t2: "", winner: 0, score1: 0, score2: 0 };
+            let s1 = details.semifinals[1] || { t1: "", t2: "", winner: 0, score1: 0, score2: 0 };
+
+            let s0S1 = Number(s0.score1) || 0;
+            let s0S2 = Number(s0.score2) || 0;
+            let semi0WinnerTeam = s0.winner === 2 ? s0.t2 : (s0.winner === 1 ? s0.t1 : (s0S2 > s0S1 ? s0.t2 : s0.t1));
+            let semi0LoserTeam = semi0WinnerTeam === s0.t1 ? s0.t2 : s0.t1;
+
+            let s1S1 = Number(s1.score1) || 0;
+            let s1S2 = Number(s1.score2) || 0;
+            let semi1WinnerTeam = s1.winner === 2 ? s1.t2 : (s1.winner === 1 ? s1.t1 : (s1S2 > s1S1 ? s1.t2 : s1.t1));
+            let semi1LoserTeam = semi1WinnerTeam === s1.t1 ? s1.t2 : s1.t1;
+
+            if (!details.championship) {
+                details.championship = { t1: "", t2: "", winner: 0 };
+            }
+            // Strict fallback assignment guaranteeing t2 populates from s1.t2 if resolver yields empty
+            details.championship.t1 = semi0WinnerTeam || details.semifinals[0].t1 || ""; 
+            details.championship.t2 = semi1WinnerTeam || details.semifinals[1].t2 || "";
+
+            // 3. Resolve Championship & Third Place (Week 17)
+            if (details.championship.t1 && details.championship.t2) {
+                let res = resolveMatchupData(details.championship.t1, details.championship.t2, champWeek);
+                details.championship.score1 = res.score1;
+                details.championship.score2 = res.score2;
+                if (res.score1 !== undefined && res.score2 !== undefined && res.score1 !== res.score2) {
+                    details.championship.winner = res.score1 > res.score2 ? 1 : 2;
+                } else if (!details.championship.winner || details.championship.winner === 0) {
+                    details.championship.winner = res.winner;
+                }
+            }
+
+            if (!details.thirdPlaceGame) {
+                details.thirdPlaceGame = { t1: "", t2: "", winner: 0 };
+            }
+            details.thirdPlaceGame.t1 = semi0LoserTeam; 
+            details.thirdPlaceGame.t2 = semi1LoserTeam;
+
+            if (details.thirdPlaceGame.t1 && details.thirdPlaceGame.t2) {
+                let res = resolveMatchupData(details.thirdPlaceGame.t1, details.thirdPlaceGame.t2, champWeek);
+                details.thirdPlaceGame.score1 = res.score1;
+                details.thirdPlaceGame.score2 = res.score2;
+                if (res.score1 !== undefined && res.score2 !== undefined && res.score1 !== res.score2) {
+                    details.thirdPlaceGame.winner = res.score1 > res.score2 ? 1 : 2;
+                } else if (!details.thirdPlaceGame.winner || details.thirdPlaceGame.winner === 0) {
+                    details.thirdPlaceGame.winner = res.winner;
+                }
             }
         }
 
@@ -4025,7 +4328,10 @@ function renderPastSeasonsDropdownAndPages() {
                 }
 
                 const details = realmData.pastSeasonDetails[year];
-                syncBracketData(details);
+// Only sync brackets if the past season isn't locked/concluded yet
+if (!details.isLocked) {
+    syncBracketData(details);
+}
 
                 let standingsRows = details.standings.map((row, idx) => {
                     const teamNameVal = row.owner || row.team.replace(/\([^)]*\)/g, '').trim();
@@ -4258,7 +4564,7 @@ function renderPastSeasonsDropdownAndPages() {
                 let champHtml = `
                     <div class="bracket-matchup" style="border-color: var(--border-gold);">
                         <div class="bracket-team ${champ.winner === 1 ? 'winner' : ''}"><span>${champ.winner === 1 ? '👑 ' : ''}${getTeamSeedWithLabel(cs, champ.t1)}${formatNameWithBanner(champ.t1 || 'TBD')}</span>${champS1}</div>
-                        <div class="bracket-team ${champ.winner === 2 ? 'winner' : ''}"><span>${champ.winner === 2 ? '👑 ' : ''}${getTeamSeedWithLabel(cs, champ.t2)}${formatNameWithBanner(cs.t2 || 'TBD')}</span>${champS2}</div>
+                        <div class="bracket-team ${champ.winner === 2 ? 'winner' : ''}"><span>${champ.winner === 2 ? '👑 ' : ''}${getTeamSeedWithLabel(cs, champ.t2)}${formatNameWithBanner(champ.t2 || 'TBD')}</span>${champS2}</div>
                     </div>
                 `;
 
