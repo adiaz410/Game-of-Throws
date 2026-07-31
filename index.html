@@ -1344,18 +1344,26 @@
 
         const WORKER_URL = 'https://game-of-throws.a-diaz628.workers.dev/';
 
-        async function loadRealmData() {
+        async function saveRealmData(data) {
+            localStorage.setItem('gameOfThrowsData', JSON.stringify(data));
             try {
-                let response = await fetch(WORKER_URL);
-                if (!response.ok) throw new Error('Failed to fetch from backend');
-                let result = await response.json();
-                return result;
+                let response = await fetch(WORKER_URL, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    // Grab the raw text/error message sent back by your Cloudflare Worker
+                    let errorText = await response.text();
+                    console.error("Cloudflare Worker 500 Error Details:", errorText);
+                    throw new Error(`Server returned ${response.status}: ${errorText}`);
+                }
             } catch (error) {
-                let fallback = JSON.parse(localStorage.getItem('gameOfThrowsData'));
-                return fallback || {};
+                console.warn("Cloud sync failed:", error.message);
+                alert("Changes saved locally, but cloud sync failed. Check console for details.");
             }
         }
-
         async function saveRealmData(data) {
             localStorage.setItem('gameOfThrowsData', JSON.stringify(data));
             try {
