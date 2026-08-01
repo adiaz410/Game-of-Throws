@@ -5105,11 +5105,31 @@ if (!details.isLocked) {
         };
 
         window.onload = async () => {
-            realmData = await loadRealmData();
-            let hashPage = window.location.hash ? window.location.hash.replace('#/', '').replace('#', '') : 'landing';
-            renderData();
-            switchPage(hashPage);
-        };
+    // 1. Try loading from browser local storage first for instant load
+    let localData = localStorage.getItem('gameOfThrowsData');
+    if (localData) {
+        try { realmData = JSON.parse(localData); } catch (e) {}
+    }
+
+    // 2. Fetch latest from Cloudflare KV worker in the background
+    try {
+        let response = await fetch('https://game-of-throws.a-diaz628.workers.dev/');
+        if (response.ok) {
+            let cloudData = await response.json();
+            if (cloudData && Object.keys(cloudData).length > 0) {
+                realmData = cloudData;
+                localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+            }
+        }
+    } catch (err) {
+        console.warn("Could not reach cloud worker, using local cache.");
+    }
+
+    // 3. Render everything safely now that data is present
+    let hashPage = window.location.hash ? window.location.hash.replace('#/', '').replace('#', '') : 'landing';
+    renderData();
+    switchPage(hashPage);
+};
 
         window.onpopstate = () => {
             const currentPage = window.location.hash ? window.location.hash.replace('#/', '') : 'landing';
