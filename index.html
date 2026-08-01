@@ -1357,24 +1357,35 @@
             }
         }
 
+        let saveTimeout = null;
+
         async function saveRealmData(data) {
+            // 1. Always update local storage instantly for a snappy UI
             localStorage.setItem('gameOfThrowsData', JSON.stringify(data));
-            try {
-                let response = await fetch(WORKER_URL, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                if (!response.ok) {
-                    let errorText = await response.text();
-                    console.error("Cloudflare Worker Error Details:", errorText);
-                    throw new Error(`Server returned ${response.status}: ${errorText}`);
+
+            // 2. Clear any pending save timer so rapid consecutive saves get bundled into one
+            if (saveTimeout) clearTimeout(saveTimeout);
+
+            // 3. Automatically push to the cloud after 1 second of inactivity
+            saveTimeout = setTimeout(async () => {
+                try {
+                    let response = await fetch(WORKER_URL, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) {
+                        let errorText = await response.text();
+                        console.error("Cloudflare Worker Error Details:", errorText);
+                        throw new Error(`Server returned ${response.status}: ${errorText}`);
+                    }
+                    console.log("Cloud sync successful!");
+                } catch (error) {
+                    console.warn("Cloud sync failed:", error.message);
+                    alert("Changes saved locally, but cloud sync failed. Check console for details.");
                 }
-            } catch (error) {
-                console.warn("Cloud sync failed:", error.message);
-                alert("Changes saved locally, but cloud sync failed. Check console for details.");
-            }
+            }, 1000); // 1 second delay
         }
 
 // Permanent automatic map from Sleeper Owner/User IDs to Custom House Names
