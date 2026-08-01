@@ -1345,17 +1345,35 @@
         const WORKER_URL = 'https://game-of-throws.a-diaz628.workers.dev/';
 
         async function loadRealmData() {
-            try {
-                let response = await fetch(WORKER_URL);
-                if (!response.ok) throw new Error('Failed to fetch from backend worker');
-                let result = await response.json();
-                return result;
-            } catch (error) {
-                console.warn("Cloud load failed, falling back to local storage:", error.message);
-                let fallback = JSON.parse(localStorage.getItem('gameOfThrowsData'));
-                return fallback || {};
+    // 1. Try loading from browser's local storage instantly so the page doesn't hang
+    const localData = localStorage.getItem('gameOfThrowsData');
+    if (localData) {
+        try {
+            realmData = JSON.parse(localData);
+            console.log("Loaded data from local storage.");
+            renderAllSections(); // Function that updates your HTML elements
+        } catch (e) {
+            console.error("Error parsing local storage data", e);
+        }
+    }
+
+    // 2. Fetch the absolute latest version from your Cloudflare Worker in the background
+    try {
+        let response = await fetch(WORKER_URL);
+        if (response.ok) {
+            let cloudData = await response.json();
+            // If cloud data exists and isn't empty, update local data and re-render
+            if (cloudData && Object.keys(cloudData).length > 0) {
+                realmData = cloudData;
+                localStorage.setItem('gameOfThrowsData', JSON.stringify(realmData));
+                renderAllSections();
+                console.log("Synced latest data from Cloudflare KV.");
             }
         }
+    } catch (error) {
+        console.warn("Could not reach cloud worker, using local cache.", error);
+    }
+}
 
         let saveTimeout = null;
 
