@@ -1344,21 +1344,12 @@
 
         const WORKER_URL = 'https://game-of-throws.a-diaz628.workers.dev/';
 
-        // 🔑 Replace these with your actual jsonbin.io credentials
-        const JSONBIN_BIN_ID = "6a6d4ddaf5f4af5e29dc5cbd";
-        const JSONBIN_MASTER_KEY = "$2a$10$B5krI5Dioz1YCydBZ7TEYOjGPTKjpCTcw4h5PRC1LGhs50uyr5SVG";
-
         async function loadRealmData() {
             try {
-                let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-                    headers: {
-                        'X-Master-Key': JSONBIN_MASTER_KEY
-                    }
-                });
-                if (!response.ok) throw new Error('Failed to fetch from jsonbin.io');
+                let response = await fetch(WORKER_URL);
+                if (!response.ok) throw new Error('Failed to fetch from backend worker');
                 let result = await response.json();
-                // jsonbin.io wraps data inside a '.record' object
-                return result.record || {};
+                return result;
             } catch (error) {
                 console.warn("Cloud load failed, falling back to local storage:", error.message);
                 let fallback = JSON.parse(localStorage.getItem('gameOfThrowsData'));
@@ -1369,23 +1360,20 @@
         async function saveRealmData(data) {
             localStorage.setItem('gameOfThrowsData', JSON.stringify(data));
             try {
-                let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                let response = await fetch(WORKER_URL, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_MASTER_KEY
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
                 
                 if (!response.ok) {
                     let errorText = await response.text();
-                    console.error("jsonbin.io Error Details:", errorText);
+                    console.error("Cloudflare Worker Error Details:", errorText);
                     throw new Error(`Server returned ${response.status}: ${errorText}`);
                 }
             } catch (error) {
                 console.warn("Cloud sync failed:", error.message);
-                alert("Changes saved locally, but cloud sync to jsonbin.io failed. Check console for details.");
+                alert("Changes saved locally, but cloud sync failed. Check console for details.");
             }
         }
 
