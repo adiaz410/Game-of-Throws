@@ -1366,7 +1366,7 @@
             // 2. Clear any pending save timer so rapid consecutive saves get bundled into one
             if (saveTimeout) clearTimeout(saveTimeout);
 
-            // 3. Automatically push to the cloud after 1 second of inactivity
+            // 3. Automatically push to the cloud after 1.5 seconds of inactivity
             saveTimeout = setTimeout(async () => {
                 try {
                     let response = await fetch(WORKER_URL, {
@@ -1383,9 +1383,8 @@
                     console.log("Cloud sync successful!");
                 } catch (error) {
                     console.warn("Cloud sync failed:", error.message);
-                    alert("Changes saved locally, but cloud sync failed. Check console for details.");
                 }
-            }, 1000); // 1 second delay
+            }, 1500); // 1.5 second delay
         }
 
 // Permanent automatic map from Sleeper Owner/User IDs to Custom House Names
@@ -4918,7 +4917,6 @@ if (!details.isLocked) {
 
                 sortStandingsArray(updatedStandings);
                 realmData.currentSeason.standings = updatedStandings;
-                await saveRealmData(realmData);
             } catch (err) {
                 console.error("Could not auto-pull Sleeper standings:", err);
             }
